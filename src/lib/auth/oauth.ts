@@ -1,34 +1,76 @@
 /**
- * OAuth configuration.
- * GITHUB_CLIENT_ID is public and safe for client-side.
- * The client_secret lives only in the token exchange proxy.
+ * OAuth configuration — uses GitHub's PKCE flow (no client_secret needed).
+ * Only the public client_id is required.
  */
 export const OAUTH_CONFIG = {
   clientId: import.meta.env.PUBLIC_GITHUB_CLIENT_ID ?? '',
-  // The proxy that exchanges code → token (keeps client_secret server-side)
-  tokenProxyUrl: import.meta.env.PUBLIC_OAUTH_PROXY_URL ?? '',
-  // Where GitHub redirects after authorization
   redirectUri: import.meta.env.PUBLIC_OAUTH_REDIRECT_URI ?? '',
-  // Scopes needed: read user profile for identity
   scopes: 'read:user',
 };
 
-/** Build the GitHub OAuth authorize URL */
-export function getAuthorizeUrl(): string {
+// --- PKCE helpers ---
+
+/** Generate a cryptographically random code_verifier (43–128 chars) */
+function generateCodeVerifier(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return base64UrlEncode(array);
+}
+
+/** SHA-256 hash the verifier and base64url-encode it */
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return base64UrlEncode(new Uint8Array(digest));
+}
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+const VERIFIER_KEY = 'dd-pkce-verifier';
+
+/** Build the GitHub OAuth authorize URL with PKCE challenge */
+export async function getAuthorizeUrl(): Promise<string> {
+  const verifier = generateCodeVerifier();
+  const challenge = await generateCodeChallenge(verifier);
+
+  // Store verifier for the callback to use
+  sessionStorage.setItem(VERIFIER_KEY, verifier);
+
   const params = new URLSearchParams({
     client_id: OAUTH_CONFIG.clientId,
     redirect_uri: OAUTH_CONFIG.redirectUri,
     scope: OAUTH_CONFIG.scopes,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
   });
   return `https://github.com/login/oauth/authorize?${params}`;
 }
 
-/** Exchange an authorization code for an access token via the proxy */
+/** Exchange an authorization code for an access token using PKCE (no secret) */
 export async function exchangeCodeForToken(code: string): Promise<string> {
-  const res = await fetch(OAUTH_CONFIG.tokenProxyUrl, {
+  const verifier = sessionStorage.getItem(VERIFIER_KEY);
+  if (!verifier) {
+    throw new Error('Missing PKCE code_verifier — did you start the auth flow in this browser?');
+  }
+
+  const res = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code }),
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      client_id: OAUTH_CONFIG.clientId,
+      code,
+      redirect_uri: OAUTH_CONFIG.redirectUri,
+      code_verifier: verifier,
+      grant_type: 'authorization_code',
+    }),
   });
 
   if (!res.ok) {
@@ -36,6 +78,14 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
   }
 
   const data = await res.json();
+
+  if (data.error) {
+    throw new Error(data.error_description ?? data.error);
+  }
+
+  // Clean up verifier
+  sessionStorage.removeItem(VERIFIER_KEY);
+
   return data.access_token;
 }
 

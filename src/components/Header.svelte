@@ -5,8 +5,8 @@
   let menuOpen = $state(false);
   let userMenuOpen = $state(false);
 
-  function signIn() {
-    window.location.href = getAuthorizeUrl();
+  async function signIn() {
+    window.location.href = await getAuthorizeUrl();
   }
 
   function signOut() {
