@@ -1,5 +1,6 @@
 import { graphql } from './graphql';
 import { parseMetadata, extractBodyText } from '../metadata';
+import { slugify } from '../slug';
 import type { Post } from '../types/post';
 
 // --- GraphQL query strings ---
@@ -203,6 +204,18 @@ export async function fetchPost(
     createdAt: data.node.createdAt,
     commentCount: data.node.comments.totalCount,
   };
+}
+
+/** Find a post by matching its title slug against all discussions. */
+export async function fetchPostBySlug(
+  token: string,
+  repoOwner: string,
+  repoName: string,
+  categoryId: string,
+  slug: string,
+): Promise<Post | null> {
+  const posts = await fetchPosts(token, repoOwner, repoName, categoryId);
+  return posts.find((p) => slugify(p.metadata.title) === slug) ?? null;
 }
 
 export async function findDiscussionByLocalID(

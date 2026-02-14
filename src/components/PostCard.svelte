@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Post } from '../lib/types/post';
-  import { buildPostParam } from '../lib/slug';
+  import { slugify } from '../lib/slug';
 
   let { post, index = 0 }: { post: Post; index?: number } = $props();
 
@@ -24,7 +24,7 @@
 </script>
 
 <a
-  href={`/design-drops/post/?s=${buildPostParam(post.metadata.title, post.id)}`}
+  href={`/design-drops/post/${slugify(post.metadata.title)}`}
   class="group block animate-fade-up"
   style="animation-delay: {index * 80}ms"
 >

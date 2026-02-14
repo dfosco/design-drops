@@ -4,26 +4,32 @@
   import { MOCK_POSTS } from '../lib/mock-data';
   import { config } from '../lib/config';
   import { auth, authToken } from '../lib/stores/auth';
-  import { fetchPost } from '../lib/api/queries';
+  import { fetchPostBySlug, fetchRepoIds } from '../lib/api/queries';
   import { AuthError } from '../lib/api/graphql';
-  import { parsePostParam } from '../lib/slug';
+  import { slugify } from '../lib/slug';
 
   let post: Post | null = $state(null);
   let loading = $state(true);
   let showDeleteConfirm = $state(false);
 
+  /** Extract slug from pathname, e.g. /design-drops/post/my-title → my-title */
+  function getSlugFromPath(): string | null {
+    const prefix = `${config.site.basePath}/post/`;
+    const path = window.location.pathname;
+    if (!path.startsWith(prefix)) return null;
+    const slug = path.slice(prefix.length).replace(/\/+$/, '');
+    return slug || null;
+  }
+
   $effect(() => {
-    const params = new URLSearchParams(window.location.search);
-    // Support new slug param (?s=slug--id) and legacy (?id=...)
-    const slugParam = params.get('s');
-    const id = slugParam ? parsePostParam(slugParam) : params.get('id');
-    if (!id) {
+    const slug = getSlugFromPath();
+    if (!slug) {
       loading = false;
       return;
     }
 
     if (config.features.mockPosts) {
-      post = MOCK_POSTS.find((p) => p.id === id) ?? null;
+      post = MOCK_POSTS.find((p) => slugify(p.metadata.title) === slug) ?? null;
       loading = false;
       return;
     }
@@ -35,7 +41,10 @@
     }
 
     loading = true;
-    fetchPost(token, id)
+    fetchRepoIds(token, config.repo.owner, config.repo.name, config.discussions.category)
+      .then(({ categoryId }) =>
+        fetchPostBySlug(token, config.repo.owner, config.repo.name, categoryId, slug)
+      )
       .then((fetched) => {
         post = fetched;
         loading = false;
