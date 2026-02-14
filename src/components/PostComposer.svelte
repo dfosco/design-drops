@@ -67,6 +67,24 @@
     handleFiles(e.dataTransfer?.files ?? null);
   }
 
+  function handlePaste(e: ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const files: File[] = [];
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) files.push(file);
+      }
+    }
+    if (files.length > 0) {
+      e.preventDefault();
+      const dt = new DataTransfer();
+      files.forEach((f) => dt.items.add(f));
+      handleFiles(dt.files);
+    }
+  }
+
   function resetForm() {
     title = '';
     body = '';
@@ -158,12 +176,13 @@
 {#if isOpen}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[var(--color-surface)]/80 backdrop-blur-sm animate-fade-in"
+    class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[var(--color-surface)]/80 backdrop-blur-sm animate-fade-in pt-20 pb-8"
     onkeydown={(e) => e.key === 'Escape' && (isOpen = false)}
     onclick={(e) => { if (e.target === e.currentTarget) isOpen = false; }}
+    onpaste={handlePaste}
   >
     <div
-      class="relative my-12 w-full max-w-2xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] shadow-2xl animate-fade-up"
+      class="relative w-full max-w-2xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] shadow-2xl animate-fade-up"
     >
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-[var(--color-border-subtle)] px-6 py-4">
@@ -223,7 +242,7 @@
                   <circle cx="12" cy="14" r="2.5" stroke="currentColor" stroke-width="1.5" />
                   <path d="M4 22l6-6 4 4 6-8 8 10" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
                 </svg>
-                <p class="text-sm text-[var(--color-text-muted)]">Drop images here or</p>
+                <p class="text-sm text-[var(--color-text-muted)]">Drop or paste images here, or</p>
                 <label class="mt-1 cursor-pointer text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors">
                   browse files
                   <input type="file" accept="image/*" multiple class="hidden" onchange={(e) => handleFiles((e.target as HTMLInputElement).files)} />
