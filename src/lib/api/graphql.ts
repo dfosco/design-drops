@@ -8,6 +8,13 @@ export class GraphQLError extends Error {
   }
 }
 
+export class AuthError extends GraphQLError {
+  constructor(message: string = 'Authentication failed. Please sign in again.') {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
 interface GraphQLResponse<T> {
   data?: T;
   errors?: { message: string }[];
@@ -33,6 +40,11 @@ export async function graphql<T>(
       },
       body: JSON.stringify({ query, variables }),
     });
+
+    // Fail fast on auth errors — retrying with the same token is pointless
+    if (res.status === 401 || res.status === 403) {
+      throw new AuthError();
+    }
 
     // Handle rate limiting
     const remaining = res.headers.get('X-RateLimit-Remaining');

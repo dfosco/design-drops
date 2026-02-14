@@ -5,6 +5,7 @@
   import { config } from '../lib/config';
   import { auth, authToken } from '../lib/stores/auth';
   import { fetchPosts, fetchRepoIds } from '../lib/api/queries';
+  import { AuthError } from '../lib/api/graphql';
   import localstory from 'localstory';
 
   type FilterType = 'team' | 'project' | 'tag' | 'author';
@@ -26,10 +27,7 @@
 
   // Fetch real posts when authenticated
   $effect(() => {
-    let token: string | null = null;
-    const unsub = authToken.subscribe((t) => { token = t; });
-    unsub();
-
+    const token = $authToken;
     if (preview || !token) return;
 
     loading = true;
@@ -37,13 +35,17 @@
 
     fetchRepoIds(token, config.repo.owner, config.repo.name, config.discussions.category)
       .then(({ categoryId }) =>
-        fetchPosts(token!, config.repo.owner, config.repo.name, categoryId)
+        fetchPosts(token, config.repo.owner, config.repo.name, categoryId)
       )
       .then((fetched) => {
         posts = fetched;
         loading = false;
       })
       .catch((err) => {
+        if (err instanceof AuthError) {
+          auth.logout();
+          return;
+        }
         error = err.message ?? 'Failed to load drops';
         loading = false;
       });
