@@ -8,9 +8,12 @@
   type FilterType = 'team' | 'project' | 'tag' | 'author';
   type ViewMode = 'feed' | 'grid';
 
+  let { preview = false } = $props();
+
   const prefs = localstory(globalThis.localStorage, 'dd-prefs');
 
-  let posts: Post[] = $state(config.features.mockPosts ? MOCK_POSTS : []);
+  // Show mock posts in preview mode (logged-out) or when mockPosts config is on
+  let posts: Post[] = $state(preview || config.features.mockPosts ? MOCK_POSTS : []);
   let viewMode: ViewMode = $state((prefs.get('viewMode') as ViewMode) || 'feed');
 
   $effect(() => {

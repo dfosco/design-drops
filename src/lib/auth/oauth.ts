@@ -8,6 +8,9 @@ export function getTokenCreationUrl(): string {
   return 'https://github.com/settings/tokens/new?description=Design+Drops&scopes=repo,read:user';
 }
 
+/** Instructions for token expiration (can't be pre-filled via URL) */
+export const TOKEN_EXPIRATION_HINT = 'Set expiration to "No expiration" or a long period (90 days+) to avoid frequent re-authentication.';
+
 /** Validate a PAT and fetch the user's profile */
 export async function validateToken(token: string): Promise<{ login: string; avatarUrl: string }> {
   const res = await fetch('https://api.github.com/user', {

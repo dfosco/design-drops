@@ -1,8 +1,8 @@
 <script lang="ts">
   import { auth } from '../lib/stores/auth';
-  import { getTokenCreationUrl, validateToken } from '../lib/auth/oauth';
+  import { getTokenCreationUrl, TOKEN_EXPIRATION_HINT, validateToken } from '../lib/auth/oauth';
 
-  let { open = $bindable(false) } = $props();
+  let { open = $bindable(false), dismissable = true } = $props();
 
   let token = $state('');
   let status: 'idle' | 'validating' | 'error' = $state('idle');
@@ -28,13 +28,13 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && dismissable) {
       open = false;
     }
   }
 
   function handleBackdropClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) {
+    if (e.target === e.currentTarget && dismissable) {
       open = false;
     }
   }
@@ -43,7 +43,7 @@
 {#if open}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
-    class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
+    class="fixed inset-0 z-[100] flex items-center justify-center animate-fade-in {dismissable ? 'bg-black/50 backdrop-blur-sm' : 'bg-black/40 backdrop-blur-md'}"
     role="dialog"
     aria-modal="true"
     aria-label="Sign in"
@@ -82,7 +82,7 @@
           </svg>
         </a>
         <p class="mt-2 text-xs text-[var(--color-text-muted)]">
-          Opens GitHub with the right permissions pre-selected. Click "Generate token" and copy it.
+          Opens GitHub with the right permissions pre-selected. {TOKEN_EXPIRATION_HINT}
         </p>
       </div>
 
@@ -126,12 +126,14 @@
             Connect
           {/if}
         </button>
-        <button
-          class="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-muted)] transition-colors"
-          onclick={() => (open = false)}
-        >
-          Cancel
-        </button>
+        {#if dismissable}
+          <button
+            class="rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-muted)] transition-colors"
+            onclick={() => (open = false)}
+          >
+            Cancel
+          </button>
+        {/if}
       </div>
 
       <!-- Privacy note -->
