@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isAuthenticated } from '../lib/stores/auth';
+
   let title = $state('');
   let body = $state('');
   let team = $state('');
@@ -67,13 +69,15 @@
   const canSubmit = $derived(title.trim().length > 0);
 </script>
 
-<!-- Trigger button -->
+<!-- Trigger button (auth-gated) -->
+{#if $isAuthenticated}
 <button
   class="rounded-full bg-[var(--color-accent)] px-5 py-2 text-sm font-semibold text-[var(--color-surface)] hover:bg-[var(--color-accent-hover)] transition-colors"
   onclick={() => (isOpen = true)}
 >
   New Drop
 </button>
+{/if}
 
 <!-- Modal overlay -->
 {#if isOpen}
