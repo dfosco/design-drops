@@ -3,6 +3,8 @@
   import PostCard from './PostCard.svelte';
   import { MOCK_POSTS } from '../lib/mock-data';
   import { config } from '../lib/config';
+  import { auth, authToken } from '../lib/stores/auth';
+  import { fetchPosts, fetchRepoIds } from '../lib/api/queries';
   import localstory from 'localstory';
 
   type FilterType = 'team' | 'project' | 'tag' | 'author';
@@ -14,10 +16,37 @@
 
   // Show mock posts in preview mode (logged-out) or when mockPosts config is on
   let posts: Post[] = $state(preview || config.features.mockPosts ? MOCK_POSTS : []);
+  let loading = $state(!preview && !config.features.mockPosts);
+  let error: string | null = $state(null);
   let viewMode: ViewMode = $state((prefs.get('viewMode') as ViewMode) || 'feed');
 
   $effect(() => {
     prefs.set('viewMode', viewMode);
+  });
+
+  // Fetch real posts when authenticated
+  $effect(() => {
+    let token: string | null = null;
+    const unsub = authToken.subscribe((t) => { token = t; });
+    unsub();
+
+    if (preview || !token) return;
+
+    loading = true;
+    error = null;
+
+    fetchRepoIds(token, config.repo.owner, config.repo.name, config.discussions.category)
+      .then(({ categoryId }) =>
+        fetchPosts(token!, config.repo.owner, config.repo.name, categoryId)
+      )
+      .then((fetched) => {
+        posts = fetched;
+        loading = false;
+      })
+      .catch((err) => {
+        error = err.message ?? 'Failed to load drops';
+        loading = false;
+      });
   });
 
   // Track which dropdown is open in grid mode
@@ -193,7 +222,17 @@
     </p>
   </div>
 
-  {#if viewMode === 'grid'}
+  {#if loading}
+    <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
+      <div class="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)]"></div>
+      <p class="text-sm text-[var(--color-text-muted)]">Loading drops…</p>
+    </div>
+  {:else if error}
+    <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
+      <p class="text-lg text-red-500 mb-2">Something went wrong</p>
+      <p class="text-sm text-[var(--color-text-muted)]">{error}</p>
+    </div>
+  {:else if viewMode === 'grid'}
     <!-- GRID MODE: filters as top bar dropdowns -->
     <div class="relative z-30 mb-8 flex flex-wrap items-center gap-3 animate-fade-up">
       {@render viewToggle()}

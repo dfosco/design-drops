@@ -25,7 +25,9 @@ export interface EditPostPayload {
   pendingImages?: PendingImage[];
 }
 
-// --- Image upload via Contents API ---
+// --- Image upload via Contents API (media branch) ---
+
+const MEDIA_BRANCH = 'media';
 
 async function uploadImage(
   token: string,
@@ -33,7 +35,7 @@ async function uploadImage(
   base64Content: string,
 ): Promise<string> {
   const raw = base64Content.replace(/^data:[^;]+;base64,/, '');
-  const path = `uploads/images/${filename}`;
+  const path = `images/${filename}`;
   const url = `https://api.github.com/repos/${config.repo.owner}/${config.repo.name}/contents/${path}`;
 
   const res = await fetch(url, {
@@ -45,6 +47,7 @@ async function uploadImage(
     body: JSON.stringify({
       message: `upload: ${filename}`,
       content: raw,
+      branch: MEDIA_BRANCH,
     }),
   });
 
@@ -53,7 +56,7 @@ async function uploadImage(
     throw new Error(`Image upload failed: ${res.status} ${(err as any).message ?? ''}`);
   }
 
-  return `https://raw.githubusercontent.com/${config.repo.owner}/${config.repo.name}/main/${path}`;
+  return `https://raw.githubusercontent.com/${config.repo.owner}/${config.repo.name}/${MEDIA_BRANCH}/${path}`;
 }
 
 async function uploadPendingImages(
