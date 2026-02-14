@@ -4,10 +4,13 @@
   import { MOCK_POSTS } from '../lib/mock-data';
   import { config } from '../lib/config';
   import { auth, authToken, currentUser } from '../lib/stores/auth';
+  import { editingPost } from '../lib/stores/edit';
   import { fetchPostBySlug, fetchPost, fetchRepoIds } from '../lib/api/queries';
   import { AuthError } from '../lib/api/graphql';
-  import { deletePost, editPost, addComment, deleteComment, replyToComment } from '../lib/api/dispatch';
+  import { deletePost, addComment, deleteComment, replyToComment } from '../lib/api/dispatch';
   import { slugify } from '../lib/slug';
+  import RichText from './RichText.svelte';
+  import AutocompleteTextarea from './AutocompleteTextarea.svelte';
 
   let post: Post | null = $state(null);
   let loading = $state(true);
@@ -21,19 +24,6 @@
   let replyingToUser = $state('');
   let replyText = $state('');
   let submittingReply = $state(false);
-
-  // Edit mode state
-  let editing = $state(false);
-  let editTitle = $state('');
-  let editBody = $state('');
-  let editTeam = $state('');
-  let editProject = $state('');
-  let editTags: string[] = $state([]);
-  let editTagInput = $state('');
-  let editUrls: string[] = $state([]);
-  let editUrlInput = $state('');
-  let saving = $state(false);
-  let editError = $state('');
 
   const isAuthor = $derived(
     !!$currentUser?.login && (
@@ -99,77 +89,7 @@
   }
 
   function startEditing() {
-    if (!post) return;
-    editTitle = post.metadata.title;
-    editBody = post.body;
-    editTeam = post.metadata.team;
-    editProject = post.metadata.project;
-    editTags = [...post.metadata.tags];
-    editUrls = [...post.metadata.urls];
-    editing = true;
-    editError = '';
-  }
-
-  function cancelEditing() {
-    editing = false;
-    editError = '';
-  }
-
-  function addEditTag() {
-    const tag = editTagInput.trim();
-    if (tag && !editTags.includes(tag)) {
-      editTags = [...editTags, tag];
-    }
-    editTagInput = '';
-  }
-
-  function removeEditTag(tag: string) {
-    editTags = editTags.filter((t) => t !== tag);
-  }
-
-  function addEditUrl() {
-    const url = editUrlInput.trim();
-    if (url) {
-      editUrls = [...editUrls, url];
-    }
-    editUrlInput = '';
-  }
-
-  function removeEditUrl(url: string) {
-    editUrls = editUrls.filter((u) => u !== url);
-  }
-
-  async function handleSave() {
-    const token = $authToken;
-    if (!token || !post) return;
-
-    saving = true;
-    editError = '';
-
-    try {
-      const updatedMetadata = {
-        ...post.metadata,
-        title: editTitle.trim(),
-        tags: editTags,
-        team: editTeam.trim(),
-        project: editProject.trim(),
-        urls: editUrls,
-        versionID: crypto.randomUUID(),
-      };
-
-      await editPost(token, {
-        discussionId: post.id,
-        body: editBody.trim(),
-        metadata: updatedMetadata,
-      });
-
-      editing = false;
-      refetchPost();
-    } catch (err) {
-      editError = err instanceof Error ? err.message : 'Failed to save changes';
-    } finally {
-      saving = false;
-    }
+    if (post) editingPost.set(post);
   }
 
   $effect(() => {
@@ -298,31 +218,20 @@
 
     <!-- Header -->
     <div class="mb-8 animate-fade-up" style="animation-delay: 60ms">
-      {#if editing}
-        <div class="mb-3 flex items-center gap-2 text-sm">
-          <input type="text" bind:value={editTeam} placeholder="Team" class="w-24 border-none bg-transparent text-[var(--color-text-muted)] focus:outline-none" />
+      <div class="mb-3 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+        <span>{post.metadata.team}</span>
+        {#if post.metadata.project}
           <span class="opacity-40">·</span>
-          <input type="text" bind:value={editProject} placeholder="Project" class="w-32 border-none bg-transparent text-[var(--color-text-muted)] focus:outline-none" />
-        </div>
-      {:else}
-        <div class="mb-3 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
-          <span>{post.metadata.team}</span>
-          {#if post.metadata.project}
-            <span class="opacity-40">·</span>
-            <span>{post.metadata.project}</span>
-          {/if}
-          <span class="opacity-40">·</span>
-          <span>{timeAgo(post.createdAt)}</span>
-        </div>
-      {/if}
+          <a href={`${config.site.basePath}/project/${slugify(post.metadata.project)}`}
+            class="hover:text-[var(--color-accent)] transition-colors">{post.metadata.project}</a>
+        {/if}
+        <span class="opacity-40">·</span>
+        <span>{timeAgo(post.createdAt)}</span>
+      </div>
 
-      {#if editing}
-        <input type="text" bind:value={editTitle} class="mb-4 w-full border-none bg-transparent font-[var(--font-display)] text-4xl font-bold leading-tight tracking-tight text-[var(--color-text-primary)] focus:outline-none md:text-5xl" />
-      {:else}
-        <h1 class="mb-4 font-[var(--font-display)] text-4xl font-bold leading-tight tracking-tight text-[var(--color-text-primary)] md:text-5xl">
-          {post.metadata.title}
-        </h1>
-      {/if}
+      <h1 class="mb-4 font-[var(--font-display)] text-4xl font-bold leading-tight tracking-tight text-[var(--color-text-primary)] md:text-5xl">
+        {post.metadata.title}
+      </h1>
 
       <!-- Authors -->
       <div class="flex items-center gap-3">
@@ -332,7 +241,9 @@
           {/each}
         </div>
         <span class="text-sm text-[var(--color-text-secondary)]">
-          {post.metadata.authors.join(' & ')}
+          {#each post.metadata.authors as author, i}
+            <a href={`${config.site.basePath}/user/${author}`} class="hover:text-[var(--color-accent)] transition-colors">{author}</a>{#if i < post.metadata.authors.length - 1}{' & '}{/if}
+          {/each}
         </span>
         {#if post.metadata.collaborators && post.metadata.collaborators.length > 0}
           <span class="text-sm text-[var(--color-text-muted)]">with</span>
@@ -342,7 +253,9 @@
             {/each}
           </div>
           <span class="text-sm text-[var(--color-text-muted)]">
-            {post.metadata.collaborators.join(', ')}
+            {#each post.metadata.collaborators as collab, i}
+              <a href={`${config.site.basePath}/user/${collab}`} class="hover:text-[var(--color-accent)] transition-colors">{collab}</a>{#if i < post.metadata.collaborators.length - 1}{', '}{/if}
+            {/each}
           </span>
         {/if}
       </div>
@@ -357,35 +270,13 @@
 
     <!-- Body -->
     <div class="mb-10 animate-fade-up" style="animation-delay: 180ms">
-      {#if editing}
-        <textarea bind:value={editBody} rows="4" class="w-full resize-none border-none bg-transparent text-lg leading-relaxed text-[var(--color-text-secondary)] focus:outline-none"></textarea>
-      {:else}
-        <p class="max-w-2xl text-lg leading-relaxed text-[var(--color-text-secondary)]">
-          {post.body}
-        </p>
-      {/if}
+      <p class="max-w-2xl text-lg leading-relaxed text-[var(--color-text-secondary)]">
+        <RichText text={post.body} />
+      </p>
     </div>
 
     <!-- External URLs -->
-    {#if editing}
-      <div class="mb-10 animate-fade-up" style="animation-delay: 240ms">
-        <h3 class="mb-3 text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Links</h3>
-        <div class="space-y-2">
-          {#each editUrls as url}
-            <div class="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-secondary)]">
-              <span class="flex-1 truncate">{url.replace(/^https?:\/\//, '')}</span>
-              <button class="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]" onclick={() => removeEditUrl(url)}>×</button>
-            </div>
-          {/each}
-          <div class="flex items-center gap-2">
-            <input type="text" placeholder="Add a URL…" bind:value={editUrlInput}
-              onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEditUrl(); } }}
-              class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:outline-none" />
-            <button onclick={addEditUrl} class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">Add</button>
-          </div>
-        </div>
-      </div>
-    {:else if post.metadata.urls.length > 0}
+    {#if post.metadata.urls.length > 0}
       <div class="mb-10 animate-fade-up" style="animation-delay: 240ms">
         <h3 class="mb-3 text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Links</h3>
         <div class="flex flex-wrap gap-3">
@@ -408,22 +299,7 @@
     {/if}
 
     <!-- Tags -->
-    {#if editing}
-      <div class="mb-10 animate-fade-up" style="animation-delay: 300ms">
-        <h3 class="mb-3 text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Tags</h3>
-        <div class="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2">
-          {#each editTags as tag}
-            <span class="flex items-center gap-1 rounded-full bg-[var(--color-surface)] px-2.5 py-0.5 text-xs text-[var(--color-text-secondary)]">
-              {tag}
-              <button class="ml-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]" onclick={() => removeEditTag(tag)}>×</button>
-            </span>
-          {/each}
-          <input type="text" placeholder={editTags.length === 0 ? 'Add tags…' : ''} bind:value={editTagInput}
-            onkeydown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addEditTag(); } }}
-            class="min-w-[80px] flex-1 border-none bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:outline-none" />
-        </div>
-      </div>
-    {:else if post.metadata.tags.length > 0}
+    {#if post.metadata.tags.length > 0}
       <div class="mb-10 animate-fade-up" style="animation-delay: 300ms">
         <h3 class="mb-3 text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Tags</h3>
         <div class="flex flex-wrap gap-2">
@@ -437,30 +313,7 @@
     {/if}
 
     <!-- Actions -->
-    {#if editing}
-      <div class="flex items-center gap-3 border-t border-[var(--color-border-subtle)] pt-6 animate-fade-up" style="animation-delay: 360ms">
-        {#if editError}
-          <p class="text-xs text-red-400 mr-auto">{editError}</p>
-        {/if}
-        <div class="flex items-center gap-3 ml-auto">
-          <button onclick={cancelEditing} disabled={saving}
-            class="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors">
-            Cancel
-          </button>
-          <button onclick={handleSave} disabled={saving || !editTitle.trim()}
-            class="rounded-full bg-[var(--color-accent)] px-5 py-2 text-sm font-semibold text-[var(--color-surface)] hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50">
-            {#if saving}
-              <span class="inline-flex items-center gap-2">
-                <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
-                Saving…
-              </span>
-            {:else}
-              Save changes
-            {/if}
-          </button>
-        </div>
-      </div>
-    {:else if isAuthor}
+    {#if isAuthor}
     <div class="flex items-center gap-3 border-t border-[var(--color-border-subtle)] pt-6 animate-fade-up" style="animation-delay: 360ms">
       <button
         class="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
@@ -525,13 +378,13 @@
 
         <!-- Comment input -->
         <div class="mb-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4">
-          <textarea
+          <AutocompleteTextarea
             bind:value={commentText}
             placeholder="Add a comment…"
-            rows="3"
+            rows={3}
             disabled={submittingComment}
             class="w-full resize-none bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none disabled:opacity-50"
-          ></textarea>
+          />
           {#if commentError}
             <p class="mt-2 text-xs text-red-400">{commentError}</p>
           {/if}
@@ -554,7 +407,7 @@
                 <img src={`https://github.com/${comment.author.login}.png`} alt={comment.author.login} class="h-8 w-8 shrink-0 rounded-full object-cover" loading="lazy" />
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-[var(--color-text-primary)]">{comment.author.login}</span>
+                    <a href={`${config.site.basePath}/user/${comment.author.login}`} class="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors">{comment.author.login}</a>
                     <span class="text-xs text-[var(--color-text-muted)]">{timeAgo(comment.createdAt)}</span>
                     <button class="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
                       onclick={() => startReply(comment.id, comment.author.login)}>
@@ -569,7 +422,7 @@
                       </button>
                     {/if}
                   </div>
-                  <p class="mt-1 text-sm text-[var(--color-text-secondary)]">{comment.body}</p>
+                  <p class="mt-1 text-sm text-[var(--color-text-secondary)]"><RichText text={comment.body} /></p>
 
                   {#if comment.replies && comment.replies.length > 0}
                     <div class="mt-3 space-y-3 border-l-2 border-[var(--color-border-subtle)] pl-4">
@@ -578,14 +431,14 @@
                           <img src={`https://github.com/${reply.author.login}.png`} alt={reply.author.login} class="h-6 w-6 shrink-0 rounded-full object-cover" loading="lazy" />
                           <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2">
-                              <span class="text-sm font-medium text-[var(--color-text-primary)]">{reply.author.login}</span>
+                              <a href={`${config.site.basePath}/user/${reply.author.login}`} class="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors">{reply.author.login}</a>
                               <span class="text-xs text-[var(--color-text-muted)]">{timeAgo(reply.createdAt)}</span>
                               {#if $currentUser?.login === reply.author.login}
                                 <button class="ml-auto text-xs text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
                                   onclick={() => handleDeleteComment(reply.id)}>Delete</button>
                               {/if}
                             </div>
-                            <p class="mt-0.5 text-sm text-[var(--color-text-secondary)]">{reply.body}</p>
+                            <p class="mt-0.5 text-sm text-[var(--color-text-secondary)]"><RichText text={reply.body} /></p>
                           </div>
                         </div>
                       {/each}
@@ -594,8 +447,10 @@
 
                   {#if replyingTo === comment.id}
                     <div class="mt-3 flex gap-2.5">
-                      <textarea bind:value={replyText} placeholder={`Reply to ${replyingToUser}…`} rows="2"
-                        class="flex-1 resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]"></textarea>
+                      <div class="flex-1">
+                        <AutocompleteTextarea bind:value={replyText} placeholder={`Reply to ${replyingToUser}…`} rows={2}
+                          class="w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]" />
+                      </div>
                       <div class="flex flex-col gap-1.5">
                         <button onclick={() => handleReply(comment.id)} disabled={submittingReply || !replyText.trim()}
                           class="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-medium text-[var(--color-surface)] hover:opacity-90 disabled:opacity-50 transition-opacity">

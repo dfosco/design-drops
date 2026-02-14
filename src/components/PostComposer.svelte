@@ -1,10 +1,20 @@
 <script lang="ts">
   import { isAuthenticated, authToken, currentUser } from '../lib/stores/auth';
-  import { createPost, type PendingImage } from '../lib/api/dispatch';
+  import { createPost, editPost, type PendingImage } from '../lib/api/dispatch';
   import { fetchRepoIds } from '../lib/api/queries';
   import { fetchRepoCollaborators, searchGitHubUsers } from '../lib/api/users';
+  import { fetchAuthImage } from '../lib/api/image';
   import { config } from '../lib/config';
-  import type { PostMetadata } from '../lib/types/post';
+  import type { PostMetadata, Asset } from '../lib/types/post';
+  import { editingPost } from '../lib/stores/edit';
+  import AutocompleteTextarea from './AutocompleteTextarea.svelte';
+
+  interface ImageItem {
+    file: File | null;
+    preview: string;
+    assetId?: string;
+    originalUrl?: string;
+  }
 
   let title = $state('');
   let body = $state('');
@@ -15,12 +25,18 @@
   let urlInput = $state('');
   let urls: string[] = $state([]);
   let dragOver = $state(false);
-  let images: { file: File; preview: string }[] = $state([]);
+  let images: ImageItem[] = $state([]);
   let collaborators: string[] = $state([]);
   let collabInput = $state('');
   let collabSuggestions: string[] = $state([]);
   let showCollabDropdown = $state(false);
   let knownUsers: string[] = $state([]);
+
+  // Edit mode
+  let editMode = $state(false);
+  let editDiscussionId = $state('');
+  let originalAssets: Asset[] = $state([]);
+  let originalMetadata: PostMetadata | null = $state(null);
 
   let isOpen = $state(false);
   let submitting = $state(false);
@@ -48,6 +64,49 @@
           showCollabDropdown = merged.length > 0;
         });
       }
+    }
+  });
+
+  // Open composer in edit mode when editingPost is set
+  $effect(() => {
+    const postToEdit = $editingPost;
+    if (postToEdit) {
+      editMode = true;
+      editDiscussionId = postToEdit.id;
+      title = postToEdit.metadata.title;
+      body = postToEdit.body;
+      team = postToEdit.metadata.team;
+      project = postToEdit.metadata.project;
+      tags = [...postToEdit.metadata.tags];
+      urls = [...postToEdit.metadata.urls];
+      collaborators = [...(postToEdit.metadata.collaborators ?? [])];
+      originalMetadata = { ...postToEdit.metadata };
+      originalAssets = [...postToEdit.metadata.assets];
+
+      images = postToEdit.metadata.assets
+        .filter(a => a.url && !a.pendingCDN)
+        .map(a => ({
+          file: null,
+          preview: a.url,
+          assetId: a.id,
+          originalUrl: a.url,
+        }));
+
+      // Resolve auth image URLs for previews
+      const token = $authToken;
+      if (token) {
+        for (const img of images) {
+          if (img.originalUrl) {
+            fetchAuthImage(img.originalUrl, token).then(blobUrl => {
+              img.preview = blobUrl;
+              images = [...images];
+            });
+          }
+        }
+      }
+
+      isOpen = true;
+      editingPost.set(null);
     }
   });
 
@@ -141,6 +200,116 @@
     submitError = '';
     collaborators = [];
     collabInput = '';
+    editMode = false;
+    editDiscussionId = '';
+    originalAssets = [];
+    originalMetadata = null;
+  }
+
+  async function handleCreateSubmit(token: string, user: { login: string }) {
+    const { repositoryId, categoryId } = await fetchRepoIds(
+      token,
+      config.repo.owner,
+      config.repo.name,
+      config.discussions.category,
+    );
+
+    const localID = crypto.randomUUID();
+
+    const pendingImages: PendingImage[] = [];
+    const assets: PostMetadata['assets'] = [];
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+      if (!img.file) continue;
+      const ext = img.file.name.split('.').pop() ?? 'png';
+      const filename = `${localID}-${i}.${ext}`;
+      const assetId = `asset-${i}`;
+      pendingImages.push({ id: assetId, filename, base64: img.preview });
+      assets.push({ id: assetId, type: 'image', url: '', pendingCDN: true });
+    }
+
+    const metadata: PostMetadata = {
+      localID,
+      versionID: crypto.randomUUID(),
+      authors: [user.login],
+      collaborators: [...collaborators],
+      title: title.trim(),
+      tags: [...tags],
+      team: team.trim(),
+      project: project.trim(),
+      urls: [...urls],
+      assets,
+      commentPins: [],
+    };
+
+    await createPost(token, {
+      title: title.trim(),
+      body: body.trim(),
+      metadata,
+      repositoryId,
+      categoryId,
+      pendingImages: pendingImages.length > 0 ? pendingImages : undefined,
+    });
+  }
+
+  async function handleEditSubmit(token: string) {
+    if (!originalMetadata) return;
+
+    const keptOriginals = images.filter(img => img.originalUrl);
+    const newImages = images.filter(img => img.file && !img.originalUrl);
+
+    const originalUrls = originalAssets.filter(a => a.url && !a.pendingCDN).map(a => a.url);
+    const keptUrls = keptOriginals.map(img => img.originalUrl!);
+    const imagesChanged =
+      keptUrls.length !== originalUrls.length ||
+      !keptUrls.every(url => originalUrls.includes(url)) ||
+      newImages.length > 0;
+
+    let assets: PostMetadata['assets'];
+    let pendingImages: PendingImage[] | undefined;
+
+    if (!imagesChanged) {
+      assets = [...originalAssets];
+    } else {
+      assets = keptOriginals.map((img, i) => ({
+        id: img.assetId || `asset-kept-${i}`,
+        type: 'image' as const,
+        url: img.originalUrl!,
+        pendingCDN: false,
+      }));
+
+      const editId = crypto.randomUUID();
+      pendingImages = [];
+      for (let i = 0; i < newImages.length; i++) {
+        const img = newImages[i];
+        if (!img.file) continue;
+        const ext = img.file.name.split('.').pop() ?? 'png';
+        const filename = `${editId}-${i}.${ext}`;
+        const assetId = `asset-new-${i}`;
+        pendingImages.push({ id: assetId, filename, base64: img.preview });
+        assets.push({ id: assetId, type: 'image', url: '', pendingCDN: true });
+      }
+      if (pendingImages.length === 0) pendingImages = undefined;
+    }
+
+    const updatedMetadata: PostMetadata = {
+      ...originalMetadata,
+      title: title.trim(),
+      tags: [...tags],
+      team: team.trim(),
+      project: project.trim(),
+      urls: [...urls],
+      collaborators: [...collaborators],
+      assets,
+      versionID: crypto.randomUUID(),
+    };
+
+    await editPost(token, {
+      discussionId: editDiscussionId,
+      body: body.trim(),
+      metadata: updatedMetadata,
+      pendingImages,
+    });
   }
 
   async function handleSubmit() {
@@ -150,56 +319,22 @@
 
     submitting = true;
     submitError = '';
+    const wasEditMode = editMode;
 
     try {
-      const { repositoryId, categoryId } = await fetchRepoIds(
-        token,
-        config.repo.owner,
-        config.repo.name,
-        config.discussions.category,
-      );
-
-      const localID = crypto.randomUUID();
-
-      // Build pending images
-      const pendingImages: PendingImage[] = [];
-      const assets: PostMetadata['assets'] = [];
-      for (let i = 0; i < images.length; i++) {
-        const img = images[i];
-        const ext = img.file.name.split('.').pop() ?? 'png';
-        const filename = `${localID}-${i}.${ext}`;
-        const assetId = `asset-${i}`;
-        pendingImages.push({ id: assetId, filename, base64: img.preview });
-        assets.push({ id: assetId, type: 'image', url: '', pendingCDN: true });
+      if (editMode) {
+        await handleEditSubmit(token);
+      } else {
+        await handleCreateSubmit(token, user);
       }
-
-      const metadata: PostMetadata = {
-        localID,
-        versionID: crypto.randomUUID(),
-        authors: [user.login],
-        collaborators: [...collaborators],
-        title: title.trim(),
-        tags: [...tags],
-        team: team.trim(),
-        project: project.trim(),
-        urls: [...urls],
-        assets,
-        commentPins: [],
-      };
-
-      await createPost(token, {
-        title: title.trim(),
-        body: body.trim(),
-        metadata,
-        repositoryId,
-        categoryId,
-        pendingImages: pendingImages.length > 0 ? pendingImages : undefined,
-      });
 
       resetForm();
       isOpen = false;
+      if (wasEditMode) {
+        window.location.reload();
+      }
     } catch (err) {
-      submitError = err instanceof Error ? err.message : 'Failed to create post.';
+      submitError = err instanceof Error ? err.message : wasEditMode ? 'Failed to save changes.' : 'Failed to create post.';
     } finally {
       submitting = false;
     }
@@ -223,8 +358,8 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[var(--color-surface)]/80 backdrop-blur-sm animate-fade-in pt-20 pb-8"
-    onkeydown={(e) => e.key === 'Escape' && (isOpen = false)}
-    onclick={(e) => { if (e.target === e.currentTarget) isOpen = false; }}
+    onkeydown={(e) => { if (e.key === 'Escape') { resetForm(); isOpen = false; } }}
+    onclick={(e) => { if (e.target === e.currentTarget) { resetForm(); isOpen = false; } }}
     onpaste={handlePaste}
   >
     <div
@@ -232,10 +367,10 @@
     >
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-[var(--color-border-subtle)] px-6 py-4">
-        <h2 class="font-[var(--font-display)] text-xl text-[var(--color-text-primary)]">New Drop</h2>
+        <h2 class="font-[var(--font-display)] text-xl text-[var(--color-text-primary)]">{editMode ? 'Edit Drop' : 'New Drop'}</h2>
         <button
           class="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] transition-colors"
-          onclick={() => (isOpen = false)}
+          onclick={() => { resetForm(); isOpen = false; }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M4 4l8 8M12 4l-8 8" />
@@ -257,12 +392,12 @@
 
         <!-- Body -->
         <div>
-          <textarea
-            placeholder="Describe your work — context, decisions, questions…"
+          <AutocompleteTextarea
             bind:value={body}
-            rows="4"
+            placeholder="Describe your work — context, decisions, questions…"
+            rows={4}
             class="w-full resize-none border-none bg-transparent text-sm leading-relaxed text-[var(--color-text-secondary)] placeholder:text-[var(--color-text-muted)]/50 focus:outline-none"
-          ></textarea>
+          />
         </div>
 
         <!-- Image upload -->
@@ -454,7 +589,7 @@
         <div class="flex items-center justify-end gap-3">
           <button
             class="rounded-full px-5 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-            onclick={() => (isOpen = false)}
+            onclick={() => { resetForm(); isOpen = false; }}
             disabled={submitting}
           >
             Cancel
@@ -469,10 +604,10 @@
             {#if submitting}
               <span class="inline-flex items-center gap-2">
                 <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
-                Posting…
+                {editMode ? 'Saving…' : 'Posting…'}
               </span>
             {:else}
-              Post Drop
+              {editMode ? 'Save Changes' : 'Post Drop'}
             {/if}
           </button>
         </div>
