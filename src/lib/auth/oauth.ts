@@ -5,7 +5,11 @@
 
 /** Pre-filled URL for creating a PAT with the right scopes */
 export function getTokenCreationUrl(): string {
-  return 'https://github.com/settings/tokens/new?description=Design+Drops&scopes=repo,read:user';
+  const device = typeof navigator !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent)
+    ? 'Mobile browser'
+    : 'Desktop browser';
+  const description = encodeURIComponent(`Design Drops - ${device}`);
+  return `https://github.com/settings/tokens/new?description=${description}&scopes=repo,read:user`;
 }
 
 /** Instructions for token expiration (can't be pre-filled via URL) */
