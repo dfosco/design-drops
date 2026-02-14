@@ -3,6 +3,9 @@
   import ImageCarousel from './ImageCarousel.svelte';
   import { MOCK_POSTS } from '../lib/mock-data';
   import { config } from '../lib/config';
+  import { auth, authToken } from '../lib/stores/auth';
+  import { fetchPost } from '../lib/api/queries';
+  import { AuthError } from '../lib/api/graphql';
 
   let post: Post | null = $state(null);
   let loading = $state(true);
@@ -11,11 +14,36 @@
   $effect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    if (id && config.features.mockPosts) {
-      post = MOCK_POSTS.find((p) => p.id === id) ?? null;
+    if (!id) {
+      loading = false;
+      return;
     }
-    // TODO: when real API is wired, fetch post by ID here
-    loading = false;
+
+    if (config.features.mockPosts) {
+      post = MOCK_POSTS.find((p) => p.id === id) ?? null;
+      loading = false;
+      return;
+    }
+
+    const token = $authToken;
+    if (!token) {
+      loading = false;
+      return;
+    }
+
+    loading = true;
+    fetchPost(token, id)
+      .then((fetched) => {
+        post = fetched;
+        loading = false;
+      })
+      .catch((err) => {
+        if (err instanceof AuthError) {
+          auth.logout();
+          return;
+        }
+        loading = false;
+      });
   });
 
   const timeAgo = (date: string) => {
