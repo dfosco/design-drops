@@ -31,6 +31,7 @@ export interface Post {
   body: string;
   createdAt: string;
   commentCount: number;
+  optimisticStatus?: OptimisticStatus;
 }
 
 export type OptimisticStatus =

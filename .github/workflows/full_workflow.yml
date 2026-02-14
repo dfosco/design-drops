@@ -1,0 +1,188 @@
+name: Full Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'JSON string containing the operation details (with images)'
+        required: true
+        type: string
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    env:
+      GH_PAT: ${{ secrets.DESIGN_DROPS_PAT }}
+    steps:
+      - name: Parse payload
+        id: parse
+        run: |
+          PAYLOAD='${{ inputs.payload }}'
+          echo "action=$(echo "$PAYLOAD" | jq -r '.action')" >> "$GITHUB_OUTPUT"
+          echo "localID=$(echo "$PAYLOAD" | jq -r '.localID')" >> "$GITHUB_OUTPUT"
+          echo "repositoryId=$(echo "$PAYLOAD" | jq -r '.repositoryId')" >> "$GITHUB_OUTPUT"
+          echo "categoryId=$(echo "$PAYLOAD" | jq -r '.categoryId')" >> "$GITHUB_OUTPUT"
+          echo "discussionId=$(echo "$PAYLOAD" | jq -r '.discussionId')" >> "$GITHUB_OUTPUT"
+          echo "title=$(echo "$PAYLOAD" | jq -r '.title')" >> "$GITHUB_OUTPUT"
+
+          # Body may be multiline — write to a file for safe handling
+          echo "$PAYLOAD" | jq -r '.body // empty' > /tmp/body.txt
+
+          # Write metadata and pendingImages to temp files
+          echo "$PAYLOAD" | jq '.metadata' > /tmp/metadata.json
+          echo "$PAYLOAD" | jq '.pendingImages // []' > /tmp/pending_images.json
+
+      - name: Upload images
+        id: upload
+        run: |
+          # NOTE: This uses GitHub's undocumented asset upload endpoint.
+          # It may change or break without notice.
+
+          IMAGES=$(cat /tmp/pending_images.json)
+          IMAGE_COUNT=$(echo "$IMAGES" | jq 'length')
+          CDN_URLS='[]'
+
+          for i in $(seq 0 $(( IMAGE_COUNT - 1 ))); do
+            IMG=$(echo "$IMAGES" | jq -r ".[$i]")
+            IMG_ID=$(echo "$IMG" | jq -r '.id')
+            BASE64_DATA=$(echo "$IMG" | jq -r '.base64')
+
+            # Extract MIME type and raw base64 from data URI
+            MIMETYPE=$(echo "$BASE64_DATA" | sed -n 's|^data:\([^;]*\);base64,.*|\1|p')
+            RAW_BASE64=$(echo "$BASE64_DATA" | sed 's|^data:[^;]*;base64,||')
+
+            # Determine file extension from MIME type
+            case "$MIMETYPE" in
+              image/png)  EXT="png" ;;
+              image/jpeg) EXT="jpg" ;;
+              image/gif)  EXT="gif" ;;
+              image/webp) EXT="webp" ;;
+              *)          EXT="bin" ;;
+            esac
+
+            FILENAME="${IMG_ID}.${EXT}"
+            TMPFILE="/tmp/${FILENAME}"
+
+            # Decode base64 to file
+            echo "$RAW_BASE64" | base64 -d > "$TMPFILE"
+            FILESIZE=$(stat --format=%s "$TMPFILE")
+
+            # Step 1: Get upload policy from GitHub CDN (undocumented endpoint)
+            POLICY=$(curl -s -X POST "https://github.com/upload/policies/assets" \
+              -H "Authorization: token $GH_PAT" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\":\"$FILENAME\",\"size\":$FILESIZE,\"content_type\":\"$MIMETYPE\"}")
+
+            UPLOAD_URL=$(echo "$POLICY" | jq -r '.upload_url')
+            ASSET_URL=$(echo "$POLICY" | jq -r '.asset.href')
+
+            # Step 2: Extract form fields and upload the file
+            FORM_ARGS=""
+            for key in $(echo "$POLICY" | jq -r '.form | keys[]'); do
+              VALUE=$(echo "$POLICY" | jq -r ".form[\"$key\"]")
+              FORM_ARGS="$FORM_ARGS -F $key=$VALUE"
+            done
+
+            curl -s -X POST "$UPLOAD_URL" \
+              $FORM_ARGS \
+              -F "file=@$TMPFILE"
+
+            # Collect mapping: { id, url }
+            CDN_URLS=$(echo "$CDN_URLS" | jq \
+              --arg id "$IMG_ID" \
+              --arg url "$ASSET_URL" \
+              '. + [{"id": $id, "url": $url}]')
+
+            rm -f "$TMPFILE"
+          done
+
+          # Write CDN URLs to temp file for next step
+          echo "$CDN_URLS" > /tmp/cdn_urls.json
+
+      - name: Build metadata and serialize body
+        id: build
+        run: |
+          METADATA=$(cat /tmp/metadata.json)
+          CDN_URLS=$(cat /tmp/cdn_urls.json)
+
+          # Replace pendingCDN: true with pendingCDN: false and fill in real URLs
+          UPDATED_ASSETS=$(echo "$METADATA" | jq --argjson urls "$CDN_URLS" '
+            .assets | map(
+              . as $asset |
+              ($urls | map(select(.id == $asset.id)) | first) as $match |
+              if $match then
+                .url = $match.url | .pendingCDN = false
+              else
+                .
+              end
+            )
+          ')
+
+          UPDATED_METADATA=$(echo "$METADATA" | jq --argjson assets "$UPDATED_ASSETS" '.assets = $assets')
+
+          # Serialize: prose body + dd-meta comment block
+          BODY=$(cat /tmp/body.txt)
+          SERIALIZED_META=$(echo "$UPDATED_METADATA" | jq -c .)
+          PRETTY_META=$(echo "$UPDATED_METADATA" | jq --indent 2 .)
+
+          FULL_BODY=$(printf '%s\n\n<!-- dd-meta\n%s\n-->' "$BODY" "$PRETTY_META")
+
+          # Write final body for the discussion step
+          echo "$FULL_BODY" > /tmp/final_body.txt
+
+      - name: Create discussion
+        if: steps.parse.outputs.action == 'create'
+        run: |
+          BODY=$(cat /tmp/final_body.txt)
+          ESCAPED_BODY=$(echo "$BODY" | jq -Rs .)
+          ESCAPED_TITLE=$(echo '${{ steps.parse.outputs.title }}' | jq -Rs .)
+
+          QUERY=$(cat <<EOF
+          {
+            "query": "mutation { createDiscussion(input: { repositoryId: \"${{ steps.parse.outputs.repositoryId }}\", categoryId: \"${{ steps.parse.outputs.categoryId }}\", title: $ESCAPED_TITLE, body: $ESCAPED_BODY }) { discussion { id url number } } }"
+          }
+          EOF
+          )
+
+          curl -sf -X POST https://api.github.com/graphql \
+            -H "Authorization: bearer $GH_PAT" \
+            -H "Content-Type: application/json" \
+            -d "$QUERY"
+
+      - name: Edit discussion
+        if: steps.parse.outputs.action == 'edit'
+        run: |
+          BODY=$(cat /tmp/final_body.txt)
+          ESCAPED_BODY=$(echo "$BODY" | jq -Rs .)
+
+          QUERY=$(cat <<EOF
+          {
+            "query": "mutation { updateDiscussion(input: { discussionId: \"${{ steps.parse.outputs.discussionId }}\", body: $ESCAPED_BODY }) { discussion { id url } } }"
+          }
+          EOF
+          )
+
+          curl -sf -X POST https://api.github.com/graphql \
+            -H "Authorization: bearer $GH_PAT" \
+            -H "Content-Type: application/json" \
+            -d "$QUERY"
+
+      - name: Report error
+        if: failure()
+        uses: actions/checkout@v4
+
+      - name: Write error file and push
+        if: failure()
+        run: |
+          ACTION="${{ steps.parse.outputs.action }}"
+          LOCAL_ID="${{ steps.parse.outputs.localID }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          mkdir -p uploads
+          echo "{\"error\": true, \"action\": \"$ACTION\", \"timestamp\": \"$TIMESTAMP\"}" > "uploads/${LOCAL_ID}.error"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "uploads/${LOCAL_ID}.error"
+          git commit -m "Record error for $ACTION ($LOCAL_ID)"
+          git push

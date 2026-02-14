@@ -1,0 +1,101 @@
+name: Lean Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'JSON string containing the operation details'
+        required: true
+        type: string
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    env:
+      GH_PAT: ${{ secrets.DESIGN_DROPS_PAT }}
+    steps:
+      - name: Parse payload
+        id: parse
+        run: |
+          PAYLOAD='${{ inputs.payload }}'
+          echo "action=$(echo "$PAYLOAD" | jq -r '.action')" >> "$GITHUB_OUTPUT"
+          echo "localID=$(echo "$PAYLOAD" | jq -r '.localID')" >> "$GITHUB_OUTPUT"
+          echo "repositoryId=$(echo "$PAYLOAD" | jq -r '.repositoryId')" >> "$GITHUB_OUTPUT"
+          echo "categoryId=$(echo "$PAYLOAD" | jq -r '.categoryId')" >> "$GITHUB_OUTPUT"
+          echo "discussionId=$(echo "$PAYLOAD" | jq -r '.discussionId')" >> "$GITHUB_OUTPUT"
+          echo "title=$(echo "$PAYLOAD" | jq -r '.title')" >> "$GITHUB_OUTPUT"
+
+          # Body may be multiline — write to a file for safe handling
+          echo "$PAYLOAD" | jq -r '.body // empty' > /tmp/body.txt
+
+      - name: Create discussion
+        if: steps.parse.outputs.action == 'create'
+        run: |
+          BODY=$(cat /tmp/body.txt)
+          ESCAPED_BODY=$(echo "$BODY" | jq -Rs .)
+          ESCAPED_TITLE=$(echo '${{ steps.parse.outputs.title }}' | jq -Rs .)
+
+          QUERY=$(cat <<EOF
+          {
+            "query": "mutation { createDiscussion(input: { repositoryId: \"${{ steps.parse.outputs.repositoryId }}\", categoryId: \"${{ steps.parse.outputs.categoryId }}\", title: $ESCAPED_TITLE, body: $ESCAPED_BODY }) { discussion { id url number } } }"
+          }
+          EOF
+          )
+
+          curl -sf -X POST https://api.github.com/graphql \
+            -H "Authorization: bearer $GH_PAT" \
+            -H "Content-Type: application/json" \
+            -d "$QUERY"
+
+      - name: Edit discussion
+        if: steps.parse.outputs.action == 'edit'
+        run: |
+          BODY=$(cat /tmp/body.txt)
+          ESCAPED_BODY=$(echo "$BODY" | jq -Rs .)
+
+          QUERY=$(cat <<EOF
+          {
+            "query": "mutation { updateDiscussion(input: { discussionId: \"${{ steps.parse.outputs.discussionId }}\", body: $ESCAPED_BODY }) { discussion { id url } } }"
+          }
+          EOF
+          )
+
+          curl -sf -X POST https://api.github.com/graphql \
+            -H "Authorization: bearer $GH_PAT" \
+            -H "Content-Type: application/json" \
+            -d "$QUERY"
+
+      - name: Delete (close) discussion
+        if: steps.parse.outputs.action == 'delete'
+        run: |
+          QUERY=$(cat <<EOF
+          {
+            "query": "mutation { closeDiscussion(input: { discussionId: \"${{ steps.parse.outputs.discussionId }}\" }) { discussion { id } } }"
+          }
+          EOF
+          )
+
+          curl -sf -X POST https://api.github.com/graphql \
+            -H "Authorization: bearer $GH_PAT" \
+            -H "Content-Type: application/json" \
+            -d "$QUERY"
+
+      - name: Report error
+        if: failure()
+        uses: actions/checkout@v4
+
+      - name: Write error file and push
+        if: failure()
+        run: |
+          ACTION="${{ steps.parse.outputs.action }}"
+          LOCAL_ID="${{ steps.parse.outputs.localID }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          mkdir -p uploads
+          echo "{\"error\": true, \"action\": \"$ACTION\", \"timestamp\": \"$TIMESTAMP\"}" > "uploads/${LOCAL_ID}.error"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "uploads/${LOCAL_ID}.error"
+          git commit -m "Record error for $ACTION ($LOCAL_ID)"
+          git push
