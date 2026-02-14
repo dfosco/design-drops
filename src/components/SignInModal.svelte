@@ -54,7 +54,7 @@
     <div class="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-8 shadow-2xl animate-fade-up">
       <!-- Header -->
       <div class="mb-6">
-        <h2 class="font-[var(--font-display)] text-2xl font-bold text-[var(--color-text-primary)]">
+        <h2 class="text-2xl font-bold text-[var(--color-text-primary)]">
           Sign in to Design Drops
         </h2>
         <p class="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
