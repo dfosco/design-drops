@@ -396,6 +396,7 @@
             bind:value={body}
             placeholder="Describe your work — context, decisions, questions…"
             rows={4}
+            projects={config.discussions.projects ?? []}
             class="w-full resize-none border-none bg-transparent text-sm leading-relaxed text-[var(--color-text-secondary)] placeholder:text-[var(--color-text-muted)]/50 focus:outline-none"
           />
         </div>

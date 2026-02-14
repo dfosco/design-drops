@@ -1,7 +1,17 @@
 import { graphql } from './graphql';
 import { serializeMetadata } from '../metadata';
 import { config } from '../config';
-import type { PostMetadata } from '../types/post';
+import { slugify } from '../slug';
+import type { PostMetadata, ReactionGroup } from '../types/post';
+
+/** Convert [[project-name]] mentions to markdown links before sending to GitHub. */
+function convertProjectMentions(text: string): string {
+  return text.replace(/\[\[([^\]]+)\]\]/g, (_, projectName: string) => {
+    const slug = slugify(projectName);
+    const url = `${config.site.siteUrl}${config.site.basePath}/project/${slug}`;
+    return `[${projectName}](${url})`;
+  });
+}
 
 export interface PendingImage {
   id: string;
@@ -103,6 +113,30 @@ const CLOSE_DISCUSSION = `
   }
 `;
 
+const ADD_DISCUSSION_COMMENT = `
+  mutation AddDiscussionComment($discussionId: ID!, $body: String!) {
+    addDiscussionComment(input: { discussionId: $discussionId, body: $body }) {
+      comment { id }
+    }
+  }
+`;
+
+const REPLY_TO_DISCUSSION_COMMENT = `
+  mutation ReplyToDiscussionComment($discussionId: ID!, $replyToId: ID!, $body: String!) {
+    addDiscussionComment(input: { discussionId: $discussionId, replyToId: $replyToId, body: $body }) {
+      comment { id }
+    }
+  }
+`;
+
+const DELETE_DISCUSSION_COMMENT = `
+  mutation DeleteDiscussionComment($id: ID!) {
+    deleteDiscussionComment(input: { id: $id }) {
+      comment { id }
+    }
+  }
+`;
+
 // --- Public API ---
 
 /** Create a new post: upload images → create Discussion */
@@ -113,7 +147,8 @@ export async function createPost(token: string, payload: CreatePostPayload): Pro
     meta = await uploadPendingImages(token, meta, payload.pendingImages);
   }
 
-  const fullBody = serializeMetadata(meta, payload.body);
+  const convertedBody = convertProjectMentions(payload.body);
+  const fullBody = serializeMetadata(meta, convertedBody);
 
   const data = await graphql<{ createDiscussion: { discussion: { id: string; url: string } } }>(
     CREATE_DISCUSSION,
@@ -139,7 +174,8 @@ export async function editPost(token: string, payload: EditPostPayload): Promise
     meta = await uploadPendingImages(token, meta, payload.pendingImages);
   }
 
-  const fullBody = serializeMetadata(meta, payload.body);
+  const convertedBody = convertProjectMentions(payload.body);
+  const fullBody = serializeMetadata(meta, convertedBody);
 
   await graphql(
     UPDATE_DISCUSSION,
@@ -155,4 +191,105 @@ export async function deletePost(token: string, discussionId: string): Promise<v
     { id: discussionId, reason: 'OUTDATED' },
     token,
   );
+}
+
+/** Add a comment to a Discussion */
+export async function addComment(token: string, discussionId: string, body: string): Promise<string> {
+  const convertedBody = convertProjectMentions(body);
+  const data = await graphql<{ addDiscussionComment: { comment: { id: string } } }>(
+    ADD_DISCUSSION_COMMENT,
+    { discussionId, body: convertedBody },
+    token,
+  );
+  return data.addDiscussionComment.comment.id;
+}
+
+/** Reply to a comment on a Discussion */
+export async function replyToComment(token: string, discussionId: string, replyToId: string, body: string): Promise<string> {
+  const convertedBody = convertProjectMentions(body);
+  const data = await graphql<{ addDiscussionComment: { comment: { id: string } } }>(
+    REPLY_TO_DISCUSSION_COMMENT,
+    { discussionId, replyToId, body: convertedBody },
+    token,
+  );
+  return data.addDiscussionComment.comment.id;
+}
+
+/** Delete a comment from a Discussion */
+export async function deleteComment(token: string, commentId: string): Promise<void> {
+  await graphql(
+    DELETE_DISCUSSION_COMMENT,
+    { id: commentId },
+    token,
+  );
+}
+
+// --- Reaction mutations ---
+
+const ADD_REACTION = `
+  mutation AddReaction($subjectId: ID!, $content: ReactionContent!) {
+    addReaction(input: { subjectId: $subjectId, content: $content }) {
+      reaction { content }
+      subject {
+        ... on DiscussionComment {
+          reactionGroups {
+            content
+            totalCount
+            viewerHasReacted
+          }
+        }
+        ... on Discussion {
+          reactionGroups {
+            content
+            totalCount
+            viewerHasReacted
+          }
+        }
+      }
+    }
+  }
+`;
+
+const REMOVE_REACTION = `
+  mutation RemoveReaction($subjectId: ID!, $content: ReactionContent!) {
+    removeReaction(input: { subjectId: $subjectId, content: $content }) {
+      reaction { content }
+      subject {
+        ... on DiscussionComment {
+          reactionGroups {
+            content
+            totalCount
+            viewerHasReacted
+          }
+        }
+        ... on Discussion {
+          reactionGroups {
+            content
+            totalCount
+            viewerHasReacted
+          }
+        }
+      }
+    }
+  }
+`;
+
+/** Add a reaction to a Discussion or DiscussionComment */
+export async function addReaction(token: string, subjectId: string, content: string): Promise<ReactionGroup[]> {
+  const data = await graphql<{ addReaction: { subject: { reactionGroups: ReactionGroup[] } } }>(
+    ADD_REACTION,
+    { subjectId, content },
+    token,
+  );
+  return data.addReaction?.subject?.reactionGroups?.filter((r) => r.totalCount > 0) ?? [];
+}
+
+/** Remove a reaction from a Discussion or DiscussionComment */
+export async function removeReaction(token: string, subjectId: string, content: string): Promise<ReactionGroup[]> {
+  const data = await graphql<{ removeReaction: { subject: { reactionGroups: ReactionGroup[] } } }>(
+    REMOVE_REACTION,
+    { subjectId, content },
+    token,
+  );
+  return data.removeReaction?.subject?.reactionGroups?.filter((r) => r.totalCount > 0) ?? [];
 }

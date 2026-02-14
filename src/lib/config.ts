@@ -11,13 +11,19 @@ export interface DropsConfig {
     title: string;
     description: string;
     basePath: string;
+    siteUrl: string;
   };
   discussions: {
     category: string;
+    projects?: string[];
   };
   features: {
     mockPosts: boolean;
     comments: boolean;
+  };
+  access: {
+    allowedDomains: string[];
+    allowedEmails: string[];
   };
 }
 
