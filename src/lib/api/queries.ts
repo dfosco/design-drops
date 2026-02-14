@@ -141,7 +141,9 @@ export async function fetchRepoIds(
   );
 
   if (!category) {
-    throw new Error(`Discussion category "${categoryName}" not found. Create it in your repo settings.`);
+    throw new Error(
+      `Discussion category "${categoryName}" not found. A repo admin must create it at https://github.com/${repoOwner}/${repoName}/discussions/categories`
+    );
   }
 
   return {
