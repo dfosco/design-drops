@@ -12,6 +12,9 @@ export interface DropsConfig {
     description: string;
     basePath: string;
   };
+  discussions: {
+    category: string;
+  };
   features: {
     mockPosts: boolean;
     comments: boolean;

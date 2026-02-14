@@ -10,6 +10,9 @@
     "description": "What the team's been working on",
     "basePath": "/design-drops"
   },
+  "discussions": {
+    "category": "Drops"
+  },
   "features": {
     "mockPosts": false,
     "comments": false

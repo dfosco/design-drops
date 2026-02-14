@@ -42,10 +42,10 @@
 </script>
 
 {#if open}
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="fixed inset-0 z-[100] flex items-center justify-center animate-fade-in {dismissable ? 'bg-black/50 backdrop-blur-sm' : 'bg-black/40 backdrop-blur-md'}"
     role="dialog"
+    tabindex="-1"
     aria-modal="true"
     aria-label="Sign in"
     onclick={handleBackdropClick}
@@ -145,7 +145,7 @@
       <!-- Admin notice -->
       <p class="mt-3 text-center text-xs text-[var(--color-text-muted)]">
         This application is fully hosted on
-        <a href={config.repo.url} target="_blank" rel="noopener noreferrer" class="underline hover:text-[var(--color-text-secondary)] transition-colors">{config.repo.url}</a>
+        <a href={config.repo.url} target="_blank" rel="noopener noreferrer" class="underline hover:text-[var(--color-text-secondary)] transition-colors">{config.repo.url.replace('https://', '')}</a>
         and administrated by
         <a href="https://github.com/{config.repo.admin}" target="_blank" rel="noopener noreferrer" class="underline hover:text-[var(--color-text-secondary)] transition-colors">@{config.repo.admin}</a>
       </p>

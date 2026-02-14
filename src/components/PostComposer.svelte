@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { isAuthenticated } from '../lib/stores/auth';
+  import { isAuthenticated, authToken, currentUser } from '../lib/stores/auth';
+  import { createPost, type PendingImage } from '../lib/api/dispatch';
+  import { fetchRepoIds } from '../lib/api/queries';
+  import { config } from '../lib/config';
+  import type { PostMetadata } from '../lib/types/post';
 
   let title = $state('');
   let body = $state('');
@@ -13,6 +17,8 @@
   let images: { file: File; preview: string }[] = $state([]);
 
   let isOpen = $state(false);
+  let submitting = $state(false);
+  let submitError = $state('');
 
   function addTag() {
     const t = tagInput.trim();
@@ -61,12 +67,81 @@
     handleFiles(e.dataTransfer?.files ?? null);
   }
 
-  function handleSubmit() {
-    // Will be wired up later
-    console.log('Submit:', { title, body, team, project, tags, urls, images: images.length });
+  function resetForm() {
+    title = '';
+    body = '';
+    team = '';
+    project = '';
+    tags = [];
+    urls = [];
+    images = [];
+    tagInput = '';
+    urlInput = '';
+    submitError = '';
   }
 
-  const canSubmit = $derived(title.trim().length > 0);
+  async function handleSubmit() {
+    const token = $authToken;
+    const user = $currentUser;
+    if (!token || !user) return;
+
+    submitting = true;
+    submitError = '';
+
+    try {
+      const { repositoryId, categoryId } = await fetchRepoIds(
+        token,
+        config.repo.owner,
+        config.repo.name,
+        config.discussions.category,
+      );
+
+      const localID = crypto.randomUUID();
+
+      // Build pending images
+      const pendingImages: PendingImage[] = [];
+      const assets: PostMetadata['assets'] = [];
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        const ext = img.file.name.split('.').pop() ?? 'png';
+        const filename = `${localID}-${i}.${ext}`;
+        const assetId = `asset-${i}`;
+        pendingImages.push({ id: assetId, filename, base64: img.preview });
+        assets.push({ id: assetId, type: 'image', url: '', pendingCDN: true });
+      }
+
+      const metadata: PostMetadata = {
+        localID,
+        versionID: crypto.randomUUID(),
+        authors: [user.login],
+        title: title.trim(),
+        tags: [...tags],
+        team: team.trim(),
+        project: project.trim(),
+        urls: [...urls],
+        assets,
+        commentPins: [],
+      };
+
+      await createPost(token, {
+        title: title.trim(),
+        body: body.trim(),
+        metadata,
+        repositoryId,
+        categoryId,
+        pendingImages: pendingImages.length > 0 ? pendingImages : undefined,
+      });
+
+      resetForm();
+      isOpen = false;
+    } catch (err) {
+      submitError = err instanceof Error ? err.message : 'Failed to create post.';
+    } finally {
+      submitting = false;
+    }
+  }
+
+  const canSubmit = $derived(title.trim().length > 0 && !submitting);
 </script>
 
 <!-- Trigger button (auth-gated) -->
@@ -275,22 +350,35 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-end gap-3 border-t border-[var(--color-border-subtle)] px-6 py-4">
-        <button
-          class="rounded-full px-5 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-          onclick={() => (isOpen = false)}
-        >
-          Cancel
-        </button>
-        <button
-          class="rounded-full px-6 py-2 text-sm font-semibold transition-colors {canSubmit
-            ? 'bg-[var(--color-accent)] text-[var(--color-surface)] hover:bg-[var(--color-accent-hover)]'
-            : 'bg-[var(--color-surface-overlay)] text-[var(--color-text-muted)] cursor-not-allowed'}"
-          disabled={!canSubmit}
-          onclick={handleSubmit}
-        >
-          Post Drop
-        </button>
+      <div class="border-t border-[var(--color-border-subtle)] px-6 py-4">
+        {#if submitError}
+          <p class="mb-3 text-xs text-red-400">{submitError}</p>
+        {/if}
+        <div class="flex items-center justify-end gap-3">
+          <button
+            class="rounded-full px-5 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+            onclick={() => (isOpen = false)}
+            disabled={submitting}
+          >
+            Cancel
+          </button>
+          <button
+            class="rounded-full px-6 py-2 text-sm font-semibold transition-colors {canSubmit
+              ? 'bg-[var(--color-accent)] text-[var(--color-surface)] hover:bg-[var(--color-accent-hover)]'
+              : 'bg-[var(--color-surface-overlay)] text-[var(--color-text-muted)] cursor-not-allowed'}"
+            disabled={!canSubmit}
+            onclick={handleSubmit}
+          >
+            {#if submitting}
+              <span class="inline-flex items-center gap-2">
+                <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                Posting…
+              </span>
+            {:else}
+              Post Drop
+            {/if}
+          </button>
+        </div>
       </div>
     </div>
   </div>

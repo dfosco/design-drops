@@ -101,6 +101,55 @@ interface FindDiscussionByLocalIdResponse {
   };
 }
 
+// --- Repo metadata ---
+
+const GET_REPO_IDS = `
+  query GetRepoIds($owner: String!, $name: String!) {
+    repository(owner: $owner, name: $name) {
+      id
+      discussionCategories(first: 25) {
+        nodes { id name }
+      }
+    }
+  }
+`;
+
+interface RepoIdsResponse {
+  repository: {
+    id: string;
+    discussionCategories: {
+      nodes: { id: string; name: string }[];
+    };
+  };
+}
+
+/** Fetch repositoryId and categoryId for a given category name */
+export async function fetchRepoIds(
+  token: string,
+  repoOwner: string,
+  repoName: string,
+  categoryName: string,
+): Promise<{ repositoryId: string; categoryId: string }> {
+  const data = await graphql<RepoIdsResponse>(
+    GET_REPO_IDS,
+    { owner: repoOwner, name: repoName },
+    token,
+  );
+
+  const category = data.repository.discussionCategories.nodes.find(
+    (c) => c.name === categoryName,
+  );
+
+  if (!category) {
+    throw new Error(`Discussion category "${categoryName}" not found. Create it in your repo settings.`);
+  }
+
+  return {
+    repositoryId: data.repository.id,
+    categoryId: category.id,
+  };
+}
+
 // --- Helper functions ---
 
 export async function fetchPosts(
