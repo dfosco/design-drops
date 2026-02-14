@@ -16,6 +16,7 @@ export interface PostMetadata {
   localID: string;
   versionID: string;
   authors: string[];
+  collaborators: string[];
   title: string;
   tags: string[];
   team: string;
@@ -25,12 +26,21 @@ export interface PostMetadata {
   commentPins: CommentPin[];
 }
 
+export interface Comment {
+  id: string;
+  body: string;
+  author: User;
+  createdAt: string;
+  replies?: Comment[];
+}
+
 export interface Post {
   id: string;
   metadata: PostMetadata;
   body: string;
   createdAt: string;
   commentCount: number;
+  comments?: Comment[];
   optimisticStatus?: OptimisticStatus;
 }
 

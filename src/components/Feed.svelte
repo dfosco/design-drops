@@ -64,7 +64,7 @@
   const allTeams = $derived([...new Set(posts.map((p) => p.metadata.team))]);
   const allProjects = $derived([...new Set(posts.map((p) => p.metadata.project).filter(Boolean))]);
   const allTags = $derived([...new Set(posts.flatMap((p) => p.metadata.tags))]);
-  const allAuthors = $derived([...new Set(posts.flatMap((p) => p.metadata.authors))]);
+  const allAuthors = $derived([...new Set(posts.flatMap((p) => [...p.metadata.authors, ...(p.metadata.collaborators ?? [])]))]);
 
   const hasActiveFilters = $derived(
     activeFilters.team.size > 0 ||
@@ -88,7 +88,7 @@
           if (activeFilters.team.size > 0 && !activeFilters.team.has(p.metadata.team)) return false;
           if (activeFilters.project.size > 0 && !activeFilters.project.has(p.metadata.project)) return false;
           if (activeFilters.tag.size > 0 && !p.metadata.tags.some((t) => activeFilters.tag.has(t))) return false;
-          if (activeFilters.author.size > 0 && !p.metadata.authors.some((a) => activeFilters.author.has(a))) return false;
+          if (activeFilters.author.size > 0 && !p.metadata.authors.some((a) => activeFilters.author.has(a)) && !(p.metadata.collaborators ?? []).some((c) => activeFilters.author.has(c))) return false;
           return true;
         })
       : posts

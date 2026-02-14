@@ -2,6 +2,7 @@
   import { isAuthenticated, authToken, currentUser } from '../lib/stores/auth';
   import { createPost, type PendingImage } from '../lib/api/dispatch';
   import { fetchRepoIds } from '../lib/api/queries';
+  import { fetchRepoCollaborators, searchGitHubUsers } from '../lib/api/users';
   import { config } from '../lib/config';
   import type { PostMetadata } from '../lib/types/post';
 
@@ -15,10 +16,52 @@
   let urls: string[] = $state([]);
   let dragOver = $state(false);
   let images: { file: File; preview: string }[] = $state([]);
+  let collaborators: string[] = $state([]);
+  let collabInput = $state('');
+  let collabSuggestions: string[] = $state([]);
+  let showCollabDropdown = $state(false);
+  let knownUsers: string[] = $state([]);
 
   let isOpen = $state(false);
   let submitting = $state(false);
   let submitError = $state('');
+
+  $effect(() => {
+    const token = $authToken;
+    if (token && knownUsers.length === 0) {
+      fetchRepoCollaborators(token).then(users => { knownUsers = users; });
+    }
+  });
+
+  $effect(() => {
+    const q = collabInput.trim().toLowerCase();
+    if (!q) { collabSuggestions = []; showCollabDropdown = false; return; }
+    const local = knownUsers.filter(u => u.toLowerCase().includes(q) && !collaborators.includes(u));
+    collabSuggestions = local.slice(0, 6);
+    showCollabDropdown = collabSuggestions.length > 0 || q.length >= 2;
+    if (local.length < 3 && q.length >= 2) {
+      const token = $authToken;
+      if (token) {
+        searchGitHubUsers(token, q).then(results => {
+          const merged = [...new Set([...local, ...results.filter(u => !collaborators.includes(u))])];
+          collabSuggestions = merged.slice(0, 6);
+          showCollabDropdown = merged.length > 0;
+        });
+      }
+    }
+  });
+
+  function addCollaborator(username: string) {
+    if (!collaborators.includes(username)) {
+      collaborators = [...collaborators, username];
+    }
+    collabInput = '';
+    showCollabDropdown = false;
+  }
+
+  function removeCollaborator(username: string) {
+    collaborators = collaborators.filter(c => c !== username);
+  }
 
   function addTag() {
     const t = tagInput.trim();
@@ -96,6 +139,8 @@
     tagInput = '';
     urlInput = '';
     submitError = '';
+    collaborators = [];
+    collabInput = '';
   }
 
   async function handleSubmit() {
@@ -132,6 +177,7 @@
         localID,
         versionID: crypto.randomUUID(),
         authors: [user.login],
+        collaborators: [...collaborators],
         title: title.trim(),
         tags: [...tags],
         team: team.trim(),
@@ -297,6 +343,38 @@
               bind:value={project}
               class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-[var(--color-accent)] focus:outline-none transition-colors"
             />
+          </div>
+        </div>
+
+        <!-- Collaborators -->
+        <div>
+          <label class="mb-2 block text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
+            Collaborators
+          </label>
+          <div class="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2">
+            {#each collaborators as collab}
+              <span class="flex items-center gap-1.5 rounded-full bg-[var(--color-surface)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)]">
+                <img src={`https://github.com/${collab}.png`} alt={collab} class="h-4 w-4 rounded-full object-cover" />
+                {collab}
+                <button class="ml-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]" onclick={() => removeCollaborator(collab)}>×</button>
+              </span>
+            {/each}
+            <div class="relative flex-1">
+              <input type="text" placeholder={collaborators.length === 0 ? '@username' : ''} bind:value={collabInput}
+                onfocus={() => { if (collabInput.trim()) showCollabDropdown = true; }}
+                class="w-full min-w-[80px] border-none bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:outline-none" />
+              {#if showCollabDropdown && collabSuggestions.length > 0}
+                <div class="absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-1 shadow-xl">
+                  {#each collabSuggestions as suggestion}
+                    <button class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] transition-colors"
+                      onclick={() => addCollaborator(suggestion)}>
+                      <img src={`https://github.com/${suggestion}.png`} alt={suggestion} class="h-5 w-5 rounded-full object-cover" />
+                      {suggestion}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
           </div>
         </div>
 

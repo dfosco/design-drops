@@ -93,11 +93,17 @@
         <div class="flex items-center gap-2">
           <div class="flex -space-x-2">
             {#each post.metadata.authors as author}
-              <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[var(--color-surface-raised)] bg-[var(--color-surface-overlay)] text-[10px] font-medium uppercase text-[var(--color-text-muted)]">
-                {author[0]}
-              </div>
+              <img src={`https://github.com/${author}.png`} alt={author} class="h-6 w-6 rounded-full border-2 border-[var(--color-surface-raised)] object-cover" loading="lazy" />
             {/each}
           </div>
+          {#if post.metadata.collaborators && post.metadata.collaborators.length > 0}
+            <span class="text-xs text-[var(--color-text-muted)]">+</span>
+            <div class="flex -space-x-1.5">
+              {#each post.metadata.collaborators as collab}
+                <img src={`https://github.com/${collab}.png`} alt={collab} class="h-5 w-5 rounded-full border-2 border-[var(--color-surface-raised)] object-cover" loading="lazy" />
+              {/each}
+            </div>
+          {/if}
           <span class="text-xs text-[var(--color-text-muted)]">
             {post.metadata.authors.join(', ')}
           </span>
