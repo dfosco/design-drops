@@ -6,6 +6,7 @@
   import { auth, authToken } from '../lib/stores/auth';
   import { fetchPost } from '../lib/api/queries';
   import { AuthError } from '../lib/api/graphql';
+  import { parsePostParam } from '../lib/slug';
 
   let post: Post | null = $state(null);
   let loading = $state(true);
@@ -13,7 +14,9 @@
 
   $effect(() => {
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
+    // Support new slug param (?s=slug--id) and legacy (?id=...)
+    const slugParam = params.get('s');
+    const id = slugParam ? parsePostParam(slugParam) : params.get('id');
     if (!id) {
       loading = false;
       return;
