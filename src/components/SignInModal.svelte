@@ -1,6 +1,7 @@
 <script lang="ts">
   import { auth } from '../lib/stores/auth';
   import { getTokenCreationUrl, TOKEN_EXPIRATION_HINT, validateToken } from '../lib/auth/oauth';
+  import { config } from '../lib/config';
 
   let { open = $bindable(false), dismissable = true } = $props();
 
@@ -139,6 +140,14 @@
       <!-- Privacy note -->
       <p class="mt-4 text-center text-xs text-[var(--color-text-muted)]">
         Your token never leaves this browser. It's stored in localStorage and used only for GitHub API calls.
+      </p>
+
+      <!-- Admin notice -->
+      <p class="mt-3 text-center text-xs text-[var(--color-text-muted)]">
+        This application is fully hosted on
+        <a href={config.repo.url} target="_blank" rel="noopener noreferrer" class="underline hover:text-[var(--color-text-secondary)] transition-colors">{config.repo.url}</a>
+        and administrated by
+        <a href="https://github.com/{config.repo.admin}" target="_blank" rel="noopener noreferrer" class="underline hover:text-[var(--color-text-secondary)] transition-colors">@{config.repo.admin}</a>
       </p>
     </div>
   </div>

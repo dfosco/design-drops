@@ -3,6 +3,7 @@ import configJson from '../../drops.config.json';
 export interface DropsConfig {
   repo: {
     owner: string;
+    admin: string;
     name: string;
     url: string;
   };
