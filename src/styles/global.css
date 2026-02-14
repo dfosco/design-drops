@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme {
+  /* Typography */
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+
+  /* Spacing rhythm */
+  --spacing-page: 2.5rem;
+}
+
+/* Light theme (default) */
+:root {
+  --color-surface: #f5f3f0;
+  --color-surface-raised: #ffffff;
+  --color-surface-overlay: #eae7e2;
+  --color-text-primary: #141210;
+  --color-text-secondary: #4a453e;
+  --color-text-muted: #7a756d;
+  --color-accent: #d04a2a;
+  --color-accent-hover: #b84024;
+  --color-border: #d4cfc7;
+  --color-border-subtle: #e0dbd4;
+}
+
+/* Dark theme — dimmed, low-contrast editorial feel */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #131211;
+    --color-surface-raised: #1c1b19;
+    --color-surface-overlay: #262422;
+    --color-text-primary: #e0dbd3;
+    --color-text-secondary: #a09a90;
+    --color-text-muted: #6b665e;
+    --color-accent: #e06a4a;
+    --color-accent-hover: #eb7f63;
+    --color-border: #332f2b;
+    --color-border-subtle: #282624;
+  }
+}
+
+/* Base */
+html {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: light dark;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+/* Selection */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+/* Animations */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.25s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}

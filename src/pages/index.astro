@@ -1,0 +1,16 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.svelte";
+import Feed from "../components/Feed.svelte";
+import PostComposer from "../components/PostComposer.svelte";
+---
+
+<Layout title="Design Drops">
+  <Header client:load isLoggedIn={true} />
+  <main>
+    <Feed client:load />
+  </main>
+  <div class="fixed bottom-8 right-8 z-40">
+    <PostComposer client:load />
+  </div>
+</Layout>

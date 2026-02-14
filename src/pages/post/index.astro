@@ -1,0 +1,12 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Header from "../../components/Header.svelte";
+import PostDetail from "../../components/PostDetail.svelte";
+---
+
+<Layout title="Post — Design Drops">
+  <Header client:load isLoggedIn={true} />
+  <main>
+    <PostDetail client:load />
+  </main>
+</Layout>
