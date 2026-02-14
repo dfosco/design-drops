@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Post } from '../lib/types/post';
   import { slugify } from '../lib/slug';
+  import { authToken } from '../lib/stores/auth';
+  import { fetchAuthImage } from '../lib/api/image';
 
   let { post, index = 0 }: { post: Post; index?: number } = $props();
 
@@ -19,8 +21,22 @@
     return 'just now';
   };
 
-  const thumbnail = $derived(post.metadata.assets[0]?.url ?? '');
+  const thumbnailRawUrl = $derived(post.metadata.assets[0]?.url ?? '');
   const hasMultipleImages = $derived(post.metadata.assets.length > 1);
+
+  let thumbnail = $state('');
+
+  $effect(() => {
+    const token = $authToken;
+    const rawUrl = thumbnailRawUrl;
+    if (!token || !rawUrl) {
+      thumbnail = rawUrl;
+      return;
+    }
+    fetchAuthImage(rawUrl, token).then((blobUrl) => {
+      thumbnail = blobUrl;
+    });
+  });
 </script>
 
 <a

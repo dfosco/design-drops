@@ -1,13 +1,29 @@
 <script lang="ts">
   import type { Asset } from '../lib/types/post';
+  import { authToken } from '../lib/stores/auth';
+  import { fetchAuthImage } from '../lib/api/image';
 
   let { assets = [], title = '' }: { assets?: Asset[]; title?: string } = $props();
 
   let currentIndex = $state(0);
+  let resolvedUrls: Record<string, string> = $state({});
 
   const total = $derived(assets.length);
   const canPrev = $derived(currentIndex > 0);
   const canNext = $derived(currentIndex < total - 1);
+
+  // Resolve authenticated image URLs
+  $effect(() => {
+    const token = $authToken;
+    if (!token) return;
+    for (const asset of assets) {
+      if (asset.url && !asset.pendingCDN && !resolvedUrls[asset.id]) {
+        fetchAuthImage(asset.url, token).then((blobUrl) => {
+          resolvedUrls = { ...resolvedUrls, [asset.id]: blobUrl };
+        });
+      }
+    }
+  });
 
   function prev() {
     if (canPrev) currentIndex--;
@@ -45,7 +61,7 @@
               </div>
             {:else}
               <img
-                src={asset.url}
+                src={resolvedUrls[asset.id] ?? asset.url}
                 alt="{title} — image {i + 1}"
                 class="h-full w-full object-cover"
               />
