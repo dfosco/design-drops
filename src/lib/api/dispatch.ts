@@ -1,43 +1,155 @@
+import { graphql } from './graphql';
+import { serializeMetadata } from '../metadata';
+import { config } from '../config';
+import type { PostMetadata } from '../types/post';
+
 export interface PendingImage {
   id: string;
-  base64: string;
+  filename: string;
+  base64: string; // data URI: "data:image/png;base64,..."
 }
 
-export interface WorkflowPayload {
-  action: 'create' | 'edit' | 'delete';
-  localID: string;
-  repositoryId?: string;
-  categoryId?: string;
-  discussionId?: string;
-  title?: string;
-  body?: string;
-  metadata?: Record<string, unknown>;
+export interface CreatePostPayload {
+  title: string;
+  body: string;
+  metadata: PostMetadata;
+  repositoryId: string;
+  categoryId: string;
   pendingImages?: PendingImage[];
 }
 
-const ACTIONS_TOKEN = import.meta.env.PUBLIC_ACTIONS_TOKEN;
-const REPO_OWNER = import.meta.env.PUBLIC_REPO_OWNER;
-const REPO_NAME = import.meta.env.PUBLIC_REPO_NAME;
+export interface EditPostPayload {
+  discussionId: string;
+  body: string;
+  metadata: PostMetadata;
+  pendingImages?: PendingImage[];
+}
 
-export async function dispatchWorkflow(payload: WorkflowPayload): Promise<boolean> {
-  const workflowFile =
-    payload.pendingImages && payload.pendingImages.length > 0
-      ? 'full_workflow.yml'
-      : 'lean_workflow.yml';
+// --- Image upload via Contents API ---
 
-  const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/${workflowFile}/dispatches`;
+async function uploadImage(
+  token: string,
+  filename: string,
+  base64Content: string,
+): Promise<string> {
+  const raw = base64Content.replace(/^data:[^;]+;base64,/, '');
+  const path = `uploads/images/${filename}`;
+  const url = `https://api.github.com/repos/${config.repo.owner}/${config.repo.name}/contents/${path}`;
 
-  const response = await fetch(url, {
-    method: 'POST',
+  const res = await fetch(url, {
+    method: 'PUT',
     headers: {
-      Authorization: `Bearer ${ACTIONS_TOKEN}`,
-      Accept: 'application/vnd.github.v3+json',
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      ref: 'main',
-      inputs: { payload: JSON.stringify(payload) },
+      message: `upload: ${filename}`,
+      content: raw,
     }),
   });
 
-  return response.status === 204;
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Image upload failed: ${res.status} ${(err as any).message ?? ''}`);
+  }
+
+  return `https://raw.githubusercontent.com/${config.repo.owner}/${config.repo.name}/main/${path}`;
+}
+
+async function uploadPendingImages(
+  token: string,
+  metadata: PostMetadata,
+  pendingImages: PendingImage[],
+): Promise<PostMetadata> {
+  const updatedAssets = [...metadata.assets];
+
+  for (const img of pendingImages) {
+    const cdnUrl = await uploadImage(token, img.filename, img.base64);
+    const assetIndex = updatedAssets.findIndex((a) => a.id === img.id);
+    if (assetIndex >= 0) {
+      updatedAssets[assetIndex] = { ...updatedAssets[assetIndex], url: cdnUrl, pendingCDN: false };
+    }
+  }
+
+  return { ...metadata, assets: updatedAssets };
+}
+
+// --- GraphQL mutations ---
+
+const CREATE_DISCUSSION = `
+  mutation CreateDiscussion($input: CreateDiscussionInput!) {
+    createDiscussion(input: $input) {
+      discussion { id url }
+    }
+  }
+`;
+
+const UPDATE_DISCUSSION = `
+  mutation UpdateDiscussion($input: UpdateDiscussionInput!) {
+    updateDiscussion(input: $input) {
+      discussion { id }
+    }
+  }
+`;
+
+const CLOSE_DISCUSSION = `
+  mutation CloseDiscussion($id: ID!, $reason: DiscussionCloseReason!) {
+    closeDiscussion(input: { discussionId: $id, reason: $reason }) {
+      discussion { id }
+    }
+  }
+`;
+
+// --- Public API ---
+
+/** Create a new post: upload images → create Discussion */
+export async function createPost(token: string, payload: CreatePostPayload): Promise<string> {
+  let meta = payload.metadata;
+
+  if (payload.pendingImages?.length) {
+    meta = await uploadPendingImages(token, meta, payload.pendingImages);
+  }
+
+  const fullBody = serializeMetadata(meta, payload.body);
+
+  const data = await graphql<{ createDiscussion: { discussion: { id: string; url: string } } }>(
+    CREATE_DISCUSSION,
+    {
+      input: {
+        repositoryId: payload.repositoryId,
+        categoryId: payload.categoryId,
+        title: payload.title,
+        body: fullBody,
+      },
+    },
+    token,
+  );
+
+  return data.createDiscussion.discussion.id;
+}
+
+/** Edit an existing post: upload new images → update Discussion */
+export async function editPost(token: string, payload: EditPostPayload): Promise<void> {
+  let meta = payload.metadata;
+
+  if (payload.pendingImages?.length) {
+    meta = await uploadPendingImages(token, meta, payload.pendingImages);
+  }
+
+  const fullBody = serializeMetadata(meta, payload.body);
+
+  await graphql(
+    UPDATE_DISCUSSION,
+    { input: { discussionId: payload.discussionId, body: fullBody } },
+    token,
+  );
+}
+
+/** Delete a post by closing the Discussion */
+export async function deletePost(token: string, discussionId: string): Promise<void> {
+  await graphql(
+    CLOSE_DISCUSSION,
+    { id: discussionId, reason: 'OUTDATED' },
+    token,
+  );
 }
