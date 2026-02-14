@@ -1,10 +1,11 @@
 /**
  * OAuth configuration — uses GitHub's PKCE flow (no client_secret needed).
- * Only the public client_id is required.
+ * Token exchange goes through a tiny CORS proxy since GitHub's endpoint blocks browsers.
  */
 export const OAUTH_CONFIG = {
   clientId: import.meta.env.PUBLIC_GITHUB_CLIENT_ID ?? '',
   redirectUri: import.meta.env.PUBLIC_OAUTH_REDIRECT_URI ?? '',
+  tokenProxyUrl: import.meta.env.PUBLIC_OAUTH_PROXY_URL ?? '',
   scopes: 'read:user',
 };
 
@@ -51,25 +52,23 @@ export async function getAuthorizeUrl(): Promise<string> {
   return `https://github.com/login/oauth/authorize?${params}`;
 }
 
-/** Exchange an authorization code for an access token using PKCE (no secret) */
+/** Exchange an authorization code for an access token via CORS proxy */
 export async function exchangeCodeForToken(code: string): Promise<string> {
   const verifier = sessionStorage.getItem(VERIFIER_KEY);
   if (!verifier) {
     throw new Error('Missing PKCE code_verifier — did you start the auth flow in this browser?');
   }
 
-  const res = await fetch('https://github.com/login/oauth/access_token', {
+  const res = await fetch(OAUTH_CONFIG.tokenProxyUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Accept: 'application/json',
     },
     body: JSON.stringify({
       client_id: OAUTH_CONFIG.clientId,
       code,
       redirect_uri: OAUTH_CONFIG.redirectUri,
       code_verifier: verifier,
-      grant_type: 'authorization_code',
     }),
   });
 
