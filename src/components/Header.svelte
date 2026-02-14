@@ -1,13 +1,10 @@
 <script lang="ts">
   import { auth, isAuthenticated, currentUser } from '../lib/stores/auth';
-  import { getAuthorizeUrl } from '../lib/auth/oauth';
+  import SignInModal from './SignInModal.svelte';
 
   let menuOpen = $state(false);
   let userMenuOpen = $state(false);
-
-  async function signIn() {
-    window.location.href = await getAuthorizeUrl();
-  }
+  let signInOpen = $state(false);
 
   function signOut() {
     auth.logout();
@@ -70,7 +67,7 @@
       {:else}
         <button
           class="rounded-full border border-[var(--color-border)] px-5 py-2 text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-          onclick={signIn}
+          onclick={() => (signInOpen = true)}
         >
           Sign in with GitHub
         </button>
@@ -115,7 +112,7 @@
         {:else}
           <button
             class="rounded-full border border-[var(--color-border)] px-5 py-2.5 text-sm text-[var(--color-text-secondary)]"
-            onclick={signIn}
+            onclick={() => (signInOpen = true)}
           >
             Sign in with GitHub
           </button>
@@ -124,3 +121,5 @@
     </div>
   {/if}
 </header>
+
+<SignInModal bind:open={signInOpen} />
