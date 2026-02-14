@@ -2,6 +2,7 @@
   import type { Post } from '../lib/types/post';
   import ImageCarousel from './ImageCarousel.svelte';
   import { MOCK_POSTS } from '../lib/mock-data';
+  import { config } from '../lib/config';
 
   let post: Post | null = $state(null);
   let loading = $state(true);
@@ -10,9 +11,10 @@
   $effect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    if (id) {
+    if (id && config.features.mockPosts) {
       post = MOCK_POSTS.find((p) => p.id === id) ?? null;
     }
+    // TODO: when real API is wired, fetch post by ID here
     loading = false;
   });
 

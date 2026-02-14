@@ -1,0 +1,16 @@
+{
+  "repo": {
+    "owner": "dfosco",
+    "name": "design-drops",
+    "url": "https://github.com/dfosco/design-drops"
+  },
+  "site": {
+    "title": "Design Drops",
+    "description": "What the team's been working on",
+    "basePath": "/design-drops"
+  },
+  "features": {
+    "mockPosts": false,
+    "comments": false
+  }
+}

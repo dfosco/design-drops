@@ -2,6 +2,7 @@
   import type { Post } from '../lib/types/post';
   import PostCard from './PostCard.svelte';
   import { MOCK_POSTS } from '../lib/mock-data';
+  import { config } from '../lib/config';
   import localstory from 'localstory';
 
   type FilterType = 'team' | 'project' | 'tag' | 'author';
@@ -9,7 +10,7 @@
 
   const prefs = localstory(globalThis.localStorage, 'dd-prefs');
 
-  let posts: Post[] = $state(MOCK_POSTS);
+  let posts: Post[] = $state(config.features.mockPosts ? MOCK_POSTS : []);
   let viewMode: ViewMode = $state((prefs.get('viewMode') as ViewMode) || 'feed');
 
   $effect(() => {
@@ -223,13 +224,20 @@
     {#if filteredPosts.length === 0}
       <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
         <div class="mb-4 text-6xl opacity-20">✦</div>
-        <p class="text-lg text-[var(--color-text-muted)]">No drops match this filter</p>
-        <button
-          class="mt-3 text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors"
-          onclick={clearFilters}
-        >
-          Clear filters
-        </button>
+        {#if posts.length === 0}
+          <p class="text-xl font-medium text-[var(--color-text-secondary)]">No drops yet</p>
+          <p class="mt-2 max-w-sm text-sm text-[var(--color-text-muted)]">
+            Be the first to share what your team's been working on. Hit the + button to post a new drop.
+          </p>
+        {:else}
+          <p class="text-lg text-[var(--color-text-muted)]">No drops match this filter</p>
+          <button
+            class="mt-3 text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors"
+            onclick={clearFilters}
+          >
+            Clear filters
+          </button>
+        {/if}
       </div>
     {:else}
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -264,13 +272,20 @@
         {#if filteredPosts.length === 0}
           <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
             <div class="mb-4 text-6xl opacity-20">✦</div>
-            <p class="text-lg text-[var(--color-text-muted)]">No drops match this filter</p>
-            <button
-              class="mt-3 text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors"
-              onclick={clearFilters}
-            >
-              Clear filters
-            </button>
+            {#if posts.length === 0}
+              <p class="text-xl font-medium text-[var(--color-text-secondary)]">No drops yet</p>
+              <p class="mt-2 max-w-sm text-sm text-[var(--color-text-muted)]">
+                Be the first to share what your team's been working on. Hit the + button to post a new drop.
+              </p>
+            {:else}
+              <p class="text-lg text-[var(--color-text-muted)]">No drops match this filter</p>
+              <button
+                class="mt-3 text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors"
+                onclick={clearFilters}
+              >
+                Clear filters
+              </button>
+            {/if}
           </div>
         {:else}
           <div class="flex flex-col gap-8">
