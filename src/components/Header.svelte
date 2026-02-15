@@ -38,7 +38,7 @@
 <header class="sticky top-0 z-50 border-b border-border-subtle bg-surface/95 backdrop-blur-md">
   <div class="mx-auto flex max-w-7xl items-center justify-between px-[var(--spacing-page)] py-4">
     <!-- Logo -->
-    <a href="/design-drops/" class="group flex items-center gap-3">
+    <a href={`${config.site.basePath}/`} class="group flex items-center gap-3">
       <div class="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <circle cx="7" cy="5" r="3" fill="var(--color-surface)" />

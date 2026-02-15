@@ -57,7 +57,7 @@
     }
   }
 
-  /** Extract discussion number and slug from pathname, e.g. /design-drops/post/43/my-title */
+  /** Extract discussion number and slug from pathname, e.g. /post/43/my-title */
   function getPostInfoFromPath(): { number: number; slug: string } | null {
     const prefix = `${config.site.basePath}/post/`;
     const path = window.location.pathname;
@@ -249,7 +249,7 @@
       <div class="mb-4 text-6xl opacity-20">✦</div>
       <p class="text-xl text-text-muted">Post not found</p>
       <a
-        href="/design-drops/"
+        href={`${config.site.basePath}/`}
         class="mt-4 text-sm text-accent hover:text-accent-hover transition-colors"
       >
         ← Back to feed
@@ -258,7 +258,7 @@
   {:else}
     <!-- Back link -->
     <a
-      href="/design-drops/"
+      href={`${config.site.basePath}/`}
       class="mb-8 inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary transition-colors animate-fade-up"
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
