@@ -234,14 +234,14 @@ const ADD_REACTION = `
         ... on DiscussionComment {
           reactionGroups {
             content
-            totalCount
+            users { totalCount }
             viewerHasReacted
           }
         }
         ... on Discussion {
           reactionGroups {
             content
-            totalCount
+            users { totalCount }
             viewerHasReacted
           }
         }
@@ -258,14 +258,14 @@ const REMOVE_REACTION = `
         ... on DiscussionComment {
           reactionGroups {
             content
-            totalCount
+            users { totalCount }
             viewerHasReacted
           }
         }
         ... on Discussion {
           reactionGroups {
             content
-            totalCount
+            users { totalCount }
             viewerHasReacted
           }
         }
@@ -274,22 +274,34 @@ const REMOVE_REACTION = `
   }
 `;
 
+interface MutationReactionGroup {
+  content: string;
+  users: { totalCount: number };
+  viewerHasReacted: boolean;
+}
+
+function normalizeReactionGroups(groups: MutationReactionGroup[]): ReactionGroup[] {
+  return groups
+    .map((g) => ({ content: g.content as ReactionGroup['content'], totalCount: g.users.totalCount, viewerHasReacted: g.viewerHasReacted }))
+    .filter((r) => r.totalCount > 0);
+}
+
 /** Add a reaction to a Discussion or DiscussionComment */
 export async function addReaction(token: string, subjectId: string, content: string): Promise<ReactionGroup[]> {
-  const data = await graphql<{ addReaction: { subject: { reactionGroups: ReactionGroup[] } } }>(
+  const data = await graphql<{ addReaction: { subject: { reactionGroups: MutationReactionGroup[] } } }>(
     ADD_REACTION,
     { subjectId, content },
     token,
   );
-  return data.addReaction?.subject?.reactionGroups?.filter((r) => r.totalCount > 0) ?? [];
+  return normalizeReactionGroups(data.addReaction?.subject?.reactionGroups ?? []);
 }
 
 /** Remove a reaction from a Discussion or DiscussionComment */
 export async function removeReaction(token: string, subjectId: string, content: string): Promise<ReactionGroup[]> {
-  const data = await graphql<{ removeReaction: { subject: { reactionGroups: ReactionGroup[] } } }>(
+  const data = await graphql<{ removeReaction: { subject: { reactionGroups: MutationReactionGroup[] } } }>(
     REMOVE_REACTION,
     { subjectId, content },
     token,
   );
-  return data.removeReaction?.subject?.reactionGroups?.filter((r) => r.totalCount > 0) ?? [];
+  return normalizeReactionGroups(data.removeReaction?.subject?.reactionGroups ?? []);
 }
