@@ -1,13 +1,13 @@
 <script lang="ts">
-  import type { Post } from '../lib/types/post';
+  import type { Post, Comment, ReactionContent } from '../lib/types/post';
   import ImageCarousel from './ImageCarousel.svelte';
   import { MOCK_POSTS } from '../lib/mock-data';
   import { config } from '../lib/config';
   import { auth, authToken, currentUser } from '../lib/stores/auth';
   import { editingPost } from '../lib/stores/edit';
-  import { fetchPostBySlug, fetchPost, fetchRepoIds } from '../lib/api/queries';
+  import { fetchPostByNumber, fetchPost } from '../lib/api/queries';
   import { AuthError } from '../lib/api/graphql';
-  import { deletePost, addComment, deleteComment, replyToComment } from '../lib/api/dispatch';
+  import { deletePost, addComment, deleteComment, replyToComment, addReaction, removeReaction } from '../lib/api/dispatch';
   import { slugify } from '../lib/slug';
   import RichText from './RichText.svelte';
   import AutocompleteTextarea from './AutocompleteTextarea.svelte';
@@ -24,6 +24,17 @@
   let replyingToUser = $state('');
   let replyText = $state('');
   let submittingReply = $state(false);
+
+  const REACTION_EMOJI: Record<string, string> = {
+    THUMBS_UP: '👍',
+    THUMBS_DOWN: '👎',
+    LAUGH: '😄',
+    HOORAY: '🎉',
+    CONFUSED: '😕',
+    HEART: '❤️',
+    ROCKET: '🚀',
+    EYES: '👀',
+  };
 
   const isAuthor = $derived(
     !!$currentUser?.login && (
@@ -46,13 +57,24 @@
     }
   }
 
-  /** Extract slug from pathname, e.g. /design-drops/post/my-title → my-title */
-  function getSlugFromPath(): string | null {
+  /** Extract discussion number and slug from pathname, e.g. /design-drops/post/43/my-title */
+  function getPostInfoFromPath(): { number: number; slug: string } | null {
     const prefix = `${config.site.basePath}/post/`;
     const path = window.location.pathname;
     if (!path.startsWith(prefix)) return null;
-    const slug = path.slice(prefix.length).replace(/\/+$/, '');
-    return slug || null;
+    const rest = path.slice(prefix.length).replace(/\/+$/, '');
+    if (!rest) return null;
+    // Format: {number}/{slug}
+    const slashIndex = rest.indexOf('/');
+    if (slashIndex === -1) {
+      // Backwards compat: might be just a number
+      const num = parseInt(rest, 10);
+      if (!isNaN(num)) return { number: num, slug: '' };
+      return null;
+    }
+    const num = parseInt(rest.slice(0, slashIndex), 10);
+    if (isNaN(num)) return null;
+    return { number: num, slug: rest.slice(slashIndex + 1) };
   }
 
   async function refetchPost() {
@@ -67,14 +89,11 @@
       }
     }
 
-    const slug = getSlugFromPath();
-    if (!slug) return;
+    const info = getPostInfoFromPath();
+    if (!info) return;
 
     loading = true;
-    fetchRepoIds(token, config.repo.owner, config.repo.name, config.discussions.category)
-      .then(({ categoryId }) =>
-        fetchPostBySlug(token, config.repo.owner, config.repo.name, categoryId, slug)
-      )
+    fetchPostByNumber(token, config.repo.owner, config.repo.name, info.number)
       .then((fetched) => {
         post = fetched;
         loading = false;
@@ -93,14 +112,14 @@
   }
 
   $effect(() => {
-    const slug = getSlugFromPath();
-    if (!slug) {
+    const info = getPostInfoFromPath();
+    if (!info) {
       loading = false;
       return;
     }
 
     if (config.features.mockPosts) {
-      post = MOCK_POSTS.find((p) => slugify(p.metadata.title) === slug) ?? null;
+      post = MOCK_POSTS.find((p) => p.number === info.number) ?? null;
       loading = false;
       return;
     }
@@ -112,10 +131,7 @@
     }
 
     loading = true;
-    fetchRepoIds(token, config.repo.owner, config.repo.name, config.discussions.category)
-      .then(({ categoryId }) =>
-        fetchPostBySlug(token, config.repo.owner, config.repo.name, categoryId, slug)
-      )
+    fetchPostByNumber(token, config.repo.owner, config.repo.name, info.number)
       .then((fetched) => {
         post = fetched;
         loading = false;
@@ -165,6 +181,41 @@
     replyingTo = commentId;
     replyingToUser = username;
     replyText = '';
+  }
+
+  async function toggleReaction(target: Post | Comment, content: string) {
+    const token = $authToken;
+    if (!token) return;
+
+    const existingGroup = target.reactions?.find(r => r.content === content);
+    const wasReacted = existingGroup?.viewerHasReacted ?? false;
+
+    // Optimistic update
+    if (wasReacted) {
+      if (existingGroup) {
+        existingGroup.totalCount = Math.max(0, existingGroup.totalCount - 1);
+        existingGroup.viewerHasReacted = false;
+      }
+      target.reactions = target.reactions?.filter(r => r.totalCount > 0) ?? [];
+    } else {
+      if (existingGroup) {
+        existingGroup.totalCount++;
+        existingGroup.viewerHasReacted = true;
+      } else {
+        target.reactions = [...(target.reactions ?? []), { content: content as ReactionContent, totalCount: 1, viewerHasReacted: true }];
+      }
+    }
+    post = post; // trigger reactivity
+
+    try {
+      if (wasReacted) {
+        await removeReaction(token, target.id, content);
+      } else {
+        await addReaction(token, target.id, content);
+      }
+    } catch (err) {
+      console.error('Reaction toggle failed:', err);
+    }
   }
 
   async function handleReply(parentCommentId: string) {
@@ -275,10 +326,52 @@
       </p>
     </div>
 
+    <!-- Post reactions -->
+    {#if post}
+      <div class="flex items-center gap-1.5 mb-10 flex-wrap animate-fade-up" style="animation-delay: 200ms">
+        {#each post.reactions ?? [] as reaction}
+          <button
+            class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm transition-colors {reaction.viewerHasReacted ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'}"
+            onclick={() => toggleReaction(post!, reaction.content)}
+          >
+            <span>{REACTION_EMOJI[reaction.content] ?? reaction.content}</span>
+            <span>{reaction.totalCount}</span>
+          </button>
+        {/each}
+        <div class="relative group">
+          <button
+            class="inline-flex items-center rounded-full border border-transparent px-1.5 py-0.5 text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-overlay)] transition-colors"
+            onclick={(e: MouseEvent) => {
+              const target = e.currentTarget as HTMLElement;
+              const picker = target.nextElementSibling;
+              if (picker) picker.classList.toggle('hidden');
+            }}
+          >
+            😀+
+          </button>
+          <div class="hidden absolute bottom-full left-0 mb-1 z-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-1.5 shadow-xl flex gap-0.5">
+            {#each Object.entries(REACTION_EMOJI) as [content, emoji]}
+              {@const reacted = post?.reactions?.some(r => r.content === content && r.viewerHasReacted)}
+              <button
+                class="rounded-lg p-1.5 text-sm transition-colors {reacted ? 'bg-[var(--color-accent)]/15 ring-1 ring-[var(--color-accent)]/40' : 'hover:bg-[var(--color-surface-overlay)]'}"
+                onclick={(e: MouseEvent) => {
+                  toggleReaction(post!, content);
+                  const picker = (e.currentTarget as HTMLElement).parentElement;
+                  if (picker) picker.classList.add('hidden');
+                }}
+              >
+                {emoji}
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <!-- External URLs -->
     {#if post.metadata.urls.length > 0}
       <div class="mb-10 animate-fade-up" style="animation-delay: 240ms">
-        <h3 class="mb-3 text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Links</h3>
+        <h3 class="mb-3 text-sm font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Links</h3>
         <div class="flex flex-wrap gap-3">
           {#each post.metadata.urls as url}
             <a
@@ -301,7 +394,7 @@
     <!-- Tags -->
     {#if post.metadata.tags.length > 0}
       <div class="mb-10 animate-fade-up" style="animation-delay: 300ms">
-        <h3 class="mb-3 text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Tags</h3>
+        <h3 class="mb-3 text-sm font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Tags</h3>
         <div class="flex flex-wrap gap-2">
           {#each post.metadata.tags as tag}
             <span class="rounded-full bg-[var(--color-surface-overlay)] px-3 py-1 text-sm text-[var(--color-text-muted)]">
@@ -386,7 +479,7 @@
             class="w-full resize-none bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none disabled:opacity-50"
           />
           {#if commentError}
-            <p class="mt-2 text-xs text-red-400">{commentError}</p>
+            <p class="mt-2 text-sm text-red-400">{commentError}</p>
           {/if}
           <div class="mt-3 flex justify-end">
             <button
@@ -408,14 +501,14 @@
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
                     <a href={`${config.site.basePath}/user/${comment.author.login}`} class="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors">{comment.author.login}</a>
-                    <span class="text-xs text-[var(--color-text-muted)]">{timeAgo(comment.createdAt)}</span>
-                    <button class="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+                    <span class="text-sm text-[var(--color-text-muted)]">{timeAgo(comment.createdAt)}</span>
+                    <button class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
                       onclick={() => startReply(comment.id, comment.author.login)}>
                       Reply
                     </button>
                     {#if $currentUser?.login === comment.author.login}
                       <button
-                        class="ml-auto text-xs text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
+                        class="ml-auto text-sm text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
                         onclick={() => handleDeleteComment(comment.id)}
                       >
                         Delete
@@ -423,6 +516,46 @@
                     {/if}
                   </div>
                   <p class="mt-1 text-sm text-[var(--color-text-secondary)]"><RichText text={comment.body} /></p>
+
+                  <!-- Comment reactions -->
+                  <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                    {#each comment.reactions ?? [] as reaction}
+                      <button
+                        class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm transition-colors {reaction.viewerHasReacted ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'}"
+                        onclick={() => toggleReaction(comment, reaction.content)}
+                      >
+                        <span>{REACTION_EMOJI[reaction.content] ?? reaction.content}</span>
+                        <span>{reaction.totalCount}</span>
+                      </button>
+                    {/each}
+                    <div class="relative group">
+                      <button
+                        class="inline-flex items-center rounded-full border border-transparent px-1.5 py-0.5 text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-overlay)] transition-colors"
+                        onclick={(e: MouseEvent) => {
+                          const target = e.currentTarget as HTMLElement;
+                          const picker = target.nextElementSibling;
+                          if (picker) picker.classList.toggle('hidden');
+                        }}
+                      >
+                        😀+
+                      </button>
+                      <div class="hidden absolute bottom-full left-0 mb-1 z-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-1.5 shadow-xl flex gap-0.5">
+                        {#each Object.entries(REACTION_EMOJI) as [content, emoji]}
+                          {@const reacted = comment.reactions?.some(r => r.content === content && r.viewerHasReacted)}
+                          <button
+                            class="rounded-lg p-1.5 text-sm transition-colors {reacted ? 'bg-[var(--color-accent)]/15 ring-1 ring-[var(--color-accent)]/40' : 'hover:bg-[var(--color-surface-overlay)]'}"
+                            onclick={(e: MouseEvent) => {
+                              toggleReaction(comment, content);
+                              const picker = (e.currentTarget as HTMLElement).parentElement;
+                              if (picker) picker.classList.add('hidden');
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        {/each}
+                      </div>
+                    </div>
+                  </div>
 
                   {#if comment.replies && comment.replies.length > 0}
                     <div class="mt-3 space-y-3 border-l-2 border-[var(--color-border-subtle)] pl-4">
@@ -432,13 +565,53 @@
                           <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2">
                               <a href={`${config.site.basePath}/user/${reply.author.login}`} class="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors">{reply.author.login}</a>
-                              <span class="text-xs text-[var(--color-text-muted)]">{timeAgo(reply.createdAt)}</span>
+                              <span class="text-sm text-[var(--color-text-muted)]">{timeAgo(reply.createdAt)}</span>
                               {#if $currentUser?.login === reply.author.login}
-                                <button class="ml-auto text-xs text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
+                                <button class="ml-auto text-sm text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
                                   onclick={() => handleDeleteComment(reply.id)}>Delete</button>
                               {/if}
                             </div>
                             <p class="mt-0.5 text-sm text-[var(--color-text-secondary)]"><RichText text={reply.body} /></p>
+
+                            <!-- Reply reactions -->
+                            <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              {#each reply.reactions ?? [] as reaction}
+                                <button
+                                  class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm transition-colors {reaction.viewerHasReacted ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'}"
+                                  onclick={() => toggleReaction(reply, reaction.content)}
+                                >
+                                  <span>{REACTION_EMOJI[reaction.content] ?? reaction.content}</span>
+                                  <span>{reaction.totalCount}</span>
+                                </button>
+                              {/each}
+                              <div class="relative group">
+                                <button
+                                  class="inline-flex items-center rounded-full border border-transparent px-1.5 py-0.5 text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-overlay)] transition-colors"
+                                  onclick={(e: MouseEvent) => {
+                                    const target = e.currentTarget as HTMLElement;
+                                    const picker = target.nextElementSibling;
+                                    if (picker) picker.classList.toggle('hidden');
+                                  }}
+                                >
+                                  😀+
+                                </button>
+                                <div class="hidden absolute bottom-full left-0 mb-1 z-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-1.5 shadow-xl flex gap-0.5">
+                                  {#each Object.entries(REACTION_EMOJI) as [content, emoji]}
+                                    {@const reacted = reply.reactions?.some(r => r.content === content && r.viewerHasReacted)}
+                                    <button
+                                      class="rounded-lg p-1.5 text-sm transition-colors {reacted ? 'bg-[var(--color-accent)]/15 ring-1 ring-[var(--color-accent)]/40' : 'hover:bg-[var(--color-surface-overlay)]'}"
+                                      onclick={(e: MouseEvent) => {
+                                        toggleReaction(reply, content);
+                                        const picker = (e.currentTarget as HTMLElement).parentElement;
+                                        if (picker) picker.classList.add('hidden');
+                                      }}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  {/each}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       {/each}
@@ -453,11 +626,11 @@
                       </div>
                       <div class="flex flex-col gap-1.5">
                         <button onclick={() => handleReply(comment.id)} disabled={submittingReply || !replyText.trim()}
-                          class="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-medium text-[var(--color-surface)] hover:opacity-90 disabled:opacity-50 transition-opacity">
+                          class="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-[var(--color-surface)] hover:opacity-90 disabled:opacity-50 transition-opacity">
                           {submittingReply ? '…' : 'Reply'}
                         </button>
                         <button onclick={() => { replyingTo = null; replyText = ''; }}
-                          class="rounded-lg px-3 py-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
+                          class="rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
                           Cancel
                         </button>
                       </div>
