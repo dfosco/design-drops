@@ -8,8 +8,8 @@
   "site": {
     "title": "Design Drops",
     "description": "What the team's been working on",
-    "basePath": "/design-drops",
-    "siteUrl": "https://dfosco.github.io"
+    "basePath": "",
+    "siteUrl": "https://designdrops.cc"
   },
   "discussions": {
     "category": "General"

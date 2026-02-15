@@ -3,8 +3,8 @@ import svelte from '@astrojs/svelte';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://dfosco.github.io',
-  base: '/design-drops',
+  site: 'https://designdrops.cc',
+  base: '/',
   output: 'static',
   integrations: [svelte()],
   vite: {

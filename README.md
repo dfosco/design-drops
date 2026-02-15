@@ -24,7 +24,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:4321/design-drops](http://localhost:4321/design-drops)
+Open [http://localhost:4321](http://localhost:4321)
 
 ### Configuration
 
