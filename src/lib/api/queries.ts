@@ -213,6 +213,11 @@ const GET_DISCUSSION_BY_NUMBER = `
         body
         createdAt
         author { login avatarUrl }
+        reactionGroups {
+          content
+          users { totalCount }
+          viewerHasReacted
+        }
         comments(first: 50) {
           totalCount
           nodes {
@@ -223,6 +228,11 @@ const GET_DISCUSSION_BY_NUMBER = `
               login
               avatarUrl
             }
+            reactionGroups {
+              content
+              users { totalCount }
+              viewerHasReacted
+            }
             replies(first: 20) {
               nodes {
                 id
@@ -231,6 +241,11 @@ const GET_DISCUSSION_BY_NUMBER = `
                 author {
                   login
                   avatarUrl
+                }
+                reactionGroups {
+                  content
+                  users { totalCount }
+                  viewerHasReacted
                 }
               }
             }
@@ -461,16 +476,19 @@ export async function fetchPostByNumber(
     body: extractBodyText(disc.body),
     createdAt: disc.createdAt,
     commentCount: disc.comments.totalCount,
+    reactions: disc.reactionGroups?.filter((r) => r.users.totalCount > 0).map((r) => ({ content: r.content, totalCount: r.users.totalCount, viewerHasReacted: r.viewerHasReacted })) ?? [],
     comments: (disc.comments.nodes ?? []).map((c) => ({
       id: c.id,
       body: c.body,
       author: c.author,
       createdAt: c.createdAt,
+      reactions: c.reactionGroups?.filter((r) => r.users.totalCount > 0).map((r) => ({ content: r.content, totalCount: r.users.totalCount, viewerHasReacted: r.viewerHasReacted })) ?? [],
       replies: (c.replies?.nodes ?? []).map((r) => ({
         id: r.id,
         body: r.body,
         author: r.author,
         createdAt: r.createdAt,
+        reactions: r.reactionGroups?.filter((rg) => rg.users.totalCount > 0).map((rg) => ({ content: rg.content, totalCount: rg.users.totalCount, viewerHasReacted: rg.viewerHasReacted })) ?? [],
       })),
     })),
   };
