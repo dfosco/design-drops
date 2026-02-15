@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isAuthenticated } from '../lib/stores/auth';
+  import { isAuthenticated, authReady } from '../lib/stores/auth';
   import SignInModal from './SignInModal.svelte';
   import Feed from './Feed.svelte';
 
@@ -13,7 +13,10 @@
   });
 </script>
 
-{#if $isAuthenticated}
+{#if !$authReady}
+  <!-- Waiting for auth state to load from localStorage — show nothing to avoid flash -->
+  <div></div>
+{:else if $isAuthenticated}
   <slot />
 {:else}
   <!-- Blurred preview feed behind the modal -->

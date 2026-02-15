@@ -1,0 +1,73 @@
+/* ============================================================
+   DESIGN DROPS — THEME TOKENS
+   ============================================================
+   Edit this file to customize the entire site's look and feel.
+
+   HOW IT WORKS
+   ─────────────
+   • Raw CSS variables live in :root / html.dark so dark-mode
+     swapping happens at runtime.
+   • The @theme block references those variables, which tells
+     Tailwind v4 to generate utility classes for them.
+     e.g. --color-surface → bg-surface, text-surface, etc.
+   • Font sizes and spacing are static, so they go directly
+     in @theme (no :root indirection needed).
+   ============================================================ */
+
+/* ── Raw color variables (light) ────────────────────────────── */
+:root {
+  --dd-surface: #f5f3f0;
+  --dd-surface-raised: #ffffff;
+  --dd-surface-overlay: #eae7e2;
+  --dd-text-primary: #141210;
+  --dd-text-secondary: #4a453e;
+  --dd-text-muted: #7a756d;
+  --dd-accent: #d04a2a;
+  --dd-accent-hover: #b84024;
+  --dd-border: #d4cfc7;
+  --dd-border-subtle: #e0dbd4;
+}
+
+/* ── Raw color variables (dark) ─────────────────────────────── */
+html.dark {
+  --dd-surface: #131211;
+  --dd-surface-raised: #1c1b19;
+  --dd-surface-overlay: #262422;
+  --dd-text-primary: #e0dbd3;
+  --dd-text-secondary: #a09a90;
+  --dd-text-muted: #6b665e;
+  --dd-accent: #e06a4a;
+  --dd-accent-hover: #eb7f63;
+  --dd-border: #332f2b;
+  --dd-border-subtle: #282624;
+}
+
+/* ── Tailwind @theme — generates utility classes ────────────── */
+@theme {
+  /* Typography */
+  --font-heading: "Playfair Display", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+
+  /* Font sizes (bumped from Tailwind defaults for legibility) */
+  --text-xs: 0.8125rem;       /* 13px */
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.9375rem;       /* 15px */
+  --text-sm--line-height: 1.5;
+  --text-base: 1.0625rem;     /* 17px */
+  --text-base--line-height: 1.6;
+
+  /* Spacing */
+  --spacing-page: 2.5rem;
+
+  /* Colors → generates bg-surface, text-muted, border-border, etc. */
+  --color-surface: var(--dd-surface);
+  --color-surface-raised: var(--dd-surface-raised);
+  --color-surface-overlay: var(--dd-surface-overlay);
+  --color-text-primary: var(--dd-text-primary);
+  --color-text-secondary: var(--dd-text-secondary);
+  --color-text-muted: var(--dd-text-muted);
+  --color-accent: var(--dd-accent);
+  --color-accent-hover: var(--dd-accent-hover);
+  --color-border: var(--dd-border);
+  --color-border-subtle: var(--dd-border-subtle);
+}

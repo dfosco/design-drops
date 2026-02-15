@@ -52,10 +52,10 @@
 {#each segments as segment}
   {#if segment.type === 'mention'}
     <a href={`${config.site.basePath}/user/${segment.value}`}
-      class="font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors">@{segment.value}</a>
+      class="font-medium text-accent hover:text-accent-hover transition-colors">@{segment.value}</a>
   {:else if segment.type === 'project'}
     <a href={`${config.site.basePath}/project/${slugify(segment.value)}`}
-      class="font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors">[[{segment.value}]]</a>
+      class="font-medium text-accent hover:text-accent-hover transition-colors">[[{segment.value}]]</a>
   {:else}
     {segment.value}
   {/if}

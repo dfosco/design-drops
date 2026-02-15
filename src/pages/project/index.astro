@@ -1,15 +1,15 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import Header from "../../components/Header.svelte";
-import PostDetail from "../../components/PostDetail.svelte";
+import ProjectProfile from "../../components/ProjectProfile.svelte";
 import AuthGate from "../../components/AuthGate.svelte";
 ---
 
-<Layout title="Post — Design Drops">
+<Layout title="Project — Design Drops">
   <Header client:load />
   <main>
     <AuthGate client:load>
-      <PostDetail client:load />
+      <ProjectProfile client:load />
     </AuthGate>
   </main>
 </Layout>

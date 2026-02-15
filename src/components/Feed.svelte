@@ -138,11 +138,11 @@
 
 <!-- View toggle icons (shared) -->
 {#snippet viewToggle()}
-  <div class="inline-flex rounded-lg border border-[var(--color-border)] p-0.5">
+  <div class="inline-flex rounded-lg border border-border p-0.5">
     <button
       class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors {viewMode === 'feed'
-        ? 'bg-[var(--color-surface-overlay)] text-[var(--color-text-primary)] font-medium'
-        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'}"
+        ? 'bg-surface-overlay text-text-primary font-medium'
+        : 'text-text-muted hover:text-text-secondary'}"
       onclick={() => (viewMode = 'feed')}
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" opacity="0.7">
@@ -154,8 +154,8 @@
     </button>
     <button
       class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors {viewMode === 'grid'
-        ? 'bg-[var(--color-surface-overlay)] text-[var(--color-text-primary)] font-medium'
-        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'}"
+        ? 'bg-surface-overlay text-text-primary font-medium'
+        : 'text-text-muted hover:text-text-secondary'}"
       onclick={() => (viewMode = 'grid')}
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" opacity="0.7">
@@ -174,8 +174,8 @@
   <div class="relative" data-dropdown>
     <button
       class="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors {activeFilters[type].size > 0
-        ? 'border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5 text-[var(--color-accent)] font-medium'
-        : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}"
+        ? 'border-accent/30 bg-accent/5 text-accent font-medium'
+        : 'border-border text-text-secondary hover:border-text-muted hover:text-text-primary'}"
       onclick={(e) => { e.stopPropagation(); toggleDropdown(type); }}
     >
       {dropdownLabel(type, values)}
@@ -184,16 +184,16 @@
       </svg>
     </button>
     {#if openDropdown === type}
-      <div class="absolute left-0 top-full z-50 mt-1.5 min-w-[180px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-1.5 shadow-xl animate-fade-in">
+      <div class="absolute left-0 top-full z-50 mt-1.5 min-w-[180px] rounded-xl border border-border bg-surface-raised p-1.5 shadow-xl animate-fade-in">
         {#each values as value}
           <button
             class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors {isActive(type, value)
-              ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium'
-              : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)]'}"
+              ? 'bg-accent/10 text-accent font-medium'
+              : 'text-text-secondary hover:bg-surface-overlay hover:text-text-primary'}"
             onclick={(e) => { e.stopPropagation(); toggleFilter(type, value); }}
           >
             <!-- Checkbox -->
-            <div class="flex h-4 w-4 items-center justify-center rounded border transition-colors {isActive(type, value) ? 'border-[var(--color-accent)] bg-[var(--color-accent)]' : 'border-[var(--color-border)]'}">
+            <div class="flex h-4 w-4 items-center justify-center rounded border transition-colors {isActive(type, value) ? 'border-accent bg-accent' : 'border-border'}">
               {#if isActive(type, value)}
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="var(--color-surface)" stroke-width="1.5">
                   <path d="M2 5l2.5 2.5L8 3" />
@@ -201,7 +201,7 @@
               {/if}
             </div>
             {#if type === 'author'}
-              <div class="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-surface-overlay)] text-[9px] font-medium uppercase text-[var(--color-text-muted)]">
+              <div class="flex h-5 w-5 items-center justify-center rounded-full bg-surface-overlay text-[9px] font-medium uppercase text-text-muted">
                 {value[0]}
               </div>
             {/if}
@@ -213,39 +213,39 @@
   </div>
 {/snippet}
 
-<div class="mx-auto max-w-7xl px-[var(--spacing-page)] pt-28 pb-20">
+<div class="mx-auto max-w-7xl px-[var(--spacing-page)] pt-10 pb-20">
   <!-- Page header -->
   <div class="mb-12 animate-fade-up">
-    <h1 class="mb-3 font-[var(--font-display)] text-5xl font-bold leading-tight tracking-tight text-[var(--color-text-primary)] md:text-7xl">
+    <h1 class="mb-3 font-heading text-5xl font-bold leading-tight tracking-tight text-text-primary md:text-7xl">
       Latest drops
     </h1>
-    <p class="max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)] font-medium">
+    <p class="max-w-xl text-lg leading-relaxed text-text-secondary font-medium">
       What the team's been working on
     </p>
   </div>
 
   {#if loading}
     <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
-      <div class="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)]"></div>
-      <p class="text-sm text-[var(--color-text-muted)]">Loading drops…</p>
+      <div class="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent"></div>
+      <p class="text-sm text-text-muted">Loading drops…</p>
     </div>
   {:else if error}
     <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
       <p class="text-lg text-red-500 mb-2">Something went wrong</p>
-      <p class="text-sm text-[var(--color-text-muted)]">{error}</p>
+      <p class="text-sm text-text-muted">{error}</p>
     </div>
   {:else if viewMode === 'grid'}
     <!-- GRID MODE: filters as top bar dropdowns -->
     <div class="relative z-30 mb-8 flex flex-wrap items-center gap-3 animate-fade-up">
       {@render viewToggle()}
-      <div class="mx-2 h-6 w-px bg-[var(--color-border)]"></div>
+      <div class="mx-2 h-6 w-px bg-border"></div>
       {@render filterDropdown('author', allAuthors)}
       {@render filterDropdown('team', allTeams)}
       {@render filterDropdown('project', allProjects)}
       {@render filterDropdown('tag', allTags)}
       {#if hasActiveFilters}
         <button
-          class="ml-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+          class="ml-1 text-sm text-text-muted hover:text-text-primary transition-colors"
           onclick={clearFilters}
         >
           Clear all
@@ -257,7 +257,7 @@
     {#if hasActiveFilters}
       <div class="mb-6 flex flex-wrap items-center gap-2 animate-fade-up">
         {#each activeFilterLabels as label}
-          <span class="rounded-full bg-[var(--color-accent)]/10 px-3 py-1 text-sm font-medium text-[var(--color-accent)]">
+          <span class="rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
             {label}
           </span>
         {/each}
@@ -269,14 +269,14 @@
       <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
         <div class="mb-4 text-6xl opacity-20">✦</div>
         {#if posts.length === 0}
-          <p class="text-xl font-medium text-[var(--color-text-secondary)]">No drops yet</p>
-          <p class="mt-2 max-w-sm text-sm text-[var(--color-text-muted)]">
+          <p class="text-xl font-medium text-text-secondary">No drops yet</p>
+          <p class="mt-2 max-w-sm text-sm text-text-muted">
             Be the first to share what your team's been working on. Hit the + button to post a new drop.
           </p>
         {:else}
-          <p class="text-lg text-[var(--color-text-muted)]">No drops match this filter</p>
+          <p class="text-lg text-text-muted">No drops match this filter</p>
           <button
-            class="mt-3 text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors"
+            class="mt-3 text-sm text-accent hover:text-accent-hover transition-colors"
             onclick={clearFilters}
           >
             Clear filters
@@ -298,14 +298,14 @@
       <div class="min-w-0 flex-1 max-w-3xl">
         {#if hasActiveFilters}
           <div class="mb-6 flex flex-wrap items-center gap-2 animate-fade-up">
-            <span class="text-sm text-[var(--color-text-muted)]">Filtered by</span>
+            <span class="text-sm text-text-muted">Filtered by</span>
             {#each activeFilterLabels as label}
-              <span class="rounded-full bg-[var(--color-accent)]/10 px-3 py-1 text-sm font-medium text-[var(--color-accent)]">
+              <span class="rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
                 {label}
               </span>
             {/each}
             <button
-              class="ml-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+              class="ml-1 text-sm text-text-muted hover:text-text-primary transition-colors"
               onclick={clearFilters}
             >
               Clear all
@@ -317,14 +317,14 @@
           <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-in">
             <div class="mb-4 text-6xl opacity-20">✦</div>
             {#if posts.length === 0}
-              <p class="text-xl font-medium text-[var(--color-text-secondary)]">No drops yet</p>
-              <p class="mt-2 max-w-sm text-sm text-[var(--color-text-muted)]">
+              <p class="text-xl font-medium text-text-secondary">No drops yet</p>
+              <p class="mt-2 max-w-sm text-sm text-text-muted">
                 Be the first to share what your team's been working on. Hit the + button to post a new drop.
               </p>
             {:else}
-              <p class="text-lg text-[var(--color-text-muted)]">No drops match this filter</p>
+              <p class="text-lg text-text-muted">No drops match this filter</p>
               <button
-                class="mt-3 text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors"
+                class="mt-3 text-sm text-accent hover:text-accent-hover transition-colors"
                 onclick={clearFilters}
               >
                 Clear filters
@@ -345,23 +345,23 @@
         <div class="sticky top-28 space-y-8">
           <!-- View toggle -->
           <div>
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">View</h3>
+            <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest text-text-muted">View</h3>
             {@render viewToggle()}
           </div>
 
           <!-- People -->
           <div>
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">People</h3>
+            <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest text-text-muted">People</h3>
             <ul class="space-y-1">
               {#each allAuthors as author}
                 <li>
                   <button
                     class="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-left text-sm transition-colors {isActive('author', author)
-                      ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)]'}"
+                      ? 'bg-accent/10 text-accent font-medium'
+                      : 'text-text-secondary hover:bg-surface-overlay hover:text-text-primary'}"
                     onclick={() => toggleFilter('author', author)}
                   >
-                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-surface-overlay)] text-[10px] font-medium uppercase text-[var(--color-text-muted)] {isActive('author', author) ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]' : ''}">
+                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-surface-overlay text-[10px] font-medium uppercase text-text-muted {isActive('author', author) ? 'bg-accent/20 text-accent' : ''}">
                       {author[0]}
                     </div>
                     {author}
@@ -373,14 +373,14 @@
 
           <!-- Teams -->
           <div>
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">Teams</h3>
+            <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest text-text-muted">Teams</h3>
             <ul class="space-y-1">
               {#each allTeams as team}
                 <li>
                   <button
                     class="w-full rounded-lg px-3 py-1.5 text-left text-sm transition-colors {isActive('team', team)
-                      ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)]'}"
+                      ? 'bg-accent/10 text-accent font-medium'
+                      : 'text-text-secondary hover:bg-surface-overlay hover:text-text-primary'}"
                     onclick={() => toggleFilter('team', team)}
                   >
                     {team}
@@ -392,14 +392,14 @@
 
           <!-- Projects -->
           <div>
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">Projects</h3>
+            <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest text-text-muted">Projects</h3>
             <ul class="space-y-1">
               {#each allProjects as project}
                 <li>
                   <button
                     class="w-full rounded-lg px-3 py-1.5 text-left text-sm transition-colors {isActive('project', project)
-                      ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)]'}"
+                      ? 'bg-accent/10 text-accent font-medium'
+                      : 'text-text-secondary hover:bg-surface-overlay hover:text-text-primary'}"
                     onclick={() => toggleFilter('project', project)}
                   >
                     {project}
@@ -411,13 +411,13 @@
 
           <!-- Tags -->
           <div>
-            <h3 class="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">Tags</h3>
+            <h3 class="mb-3 text-sm font-semibold uppercase tracking-widest text-text-muted">Tags</h3>
             <div class="flex flex-wrap gap-1.5">
               {#each allTags as tag}
                 <button
-                  class="rounded-full px-2.5 py-1 text-xs transition-colors {isActive('tag', tag)
-                    ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium'
-                    : 'bg-[var(--color-surface-overlay)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'}"
+                  class="rounded-full px-2.5 py-1 text-sm transition-colors {isActive('tag', tag)
+                    ? 'bg-accent/10 text-accent font-medium'
+                    : 'bg-surface-overlay text-text-muted hover:text-text-secondary'}"
                   onclick={() => toggleFilter('tag', tag)}
                 >
                   {tag}
@@ -429,7 +429,7 @@
           <!-- Clear all -->
           {#if hasActiveFilters}
             <button
-              class="w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-muted)] transition-colors"
+              class="w-full rounded-lg border border-border px-3 py-2 text-sm text-text-muted hover:text-text-primary hover:border-text-muted transition-colors"
               onclick={clearFilters}
             >
               Clear all filters

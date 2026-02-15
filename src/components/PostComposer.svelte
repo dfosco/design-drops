@@ -346,7 +346,7 @@
 <!-- Trigger button (auth-gated) -->
 {#if $isAuthenticated}
 <button
-  class="rounded-full bg-[var(--color-accent)] px-5 py-2 text-sm font-semibold text-[var(--color-surface)] hover:bg-[var(--color-accent-hover)] transition-colors"
+  class="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-surface hover:bg-accent-hover transition-colors"
   onclick={() => (isOpen = true)}
 >
   New Drop
@@ -357,19 +357,19 @@
 {#if isOpen}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[var(--color-surface)]/80 backdrop-blur-sm animate-fade-in pt-20 pb-8"
+    class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-surface/80 backdrop-blur-sm animate-fade-in pt-20 pb-8"
     onkeydown={(e) => { if (e.key === 'Escape') { resetForm(); isOpen = false; } }}
     onclick={(e) => { if (e.target === e.currentTarget) { resetForm(); isOpen = false; } }}
     onpaste={handlePaste}
   >
     <div
-      class="relative w-full max-w-2xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] shadow-2xl animate-fade-up"
+      class="relative w-full max-w-2xl rounded-2xl border border-border bg-surface-raised shadow-2xl animate-fade-up"
     >
       <!-- Header -->
-      <div class="flex items-center justify-between border-b border-[var(--color-border-subtle)] px-6 py-4">
-        <h2 class="font-[var(--font-display)] text-xl text-[var(--color-text-primary)]">{editMode ? 'Edit Drop' : 'New Drop'}</h2>
+      <div class="flex items-center justify-between border-b border-border-subtle px-6 py-4">
+        <h2 class="font-heading text-xl text-text-primary">{editMode ? 'Edit Drop' : 'New Drop'}</h2>
         <button
-          class="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] transition-colors"
+          class="flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:bg-surface-overlay hover:text-text-primary transition-colors"
           onclick={() => { resetForm(); isOpen = false; }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -386,7 +386,7 @@
             type="text"
             placeholder="Give your drop a title"
             bind:value={title}
-            class="w-full border-none bg-transparent font-[var(--font-display)] text-2xl text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:outline-none"
+            class="w-full border-none bg-transparent font-heading text-2xl text-text-primary placeholder:text-text-muted/50 focus:outline-none"
           />
         </div>
 
@@ -397,13 +397,13 @@
             placeholder="Describe your work — context, decisions, questions…"
             rows={4}
             projects={config.discussions.projects ?? []}
-            class="w-full resize-none border-none bg-transparent text-sm leading-relaxed text-[var(--color-text-secondary)] placeholder:text-[var(--color-text-muted)]/50 focus:outline-none"
+            class="w-full resize-none border-none bg-transparent text-sm leading-relaxed text-text-secondary placeholder:text-text-muted/50 focus:outline-none"
           />
         </div>
 
         <!-- Image upload -->
         <div>
-          <label class="mb-2 block text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
+          <label class="mb-2 block text-sm font-medium uppercase tracking-widest text-text-muted">
             Images
           </label>
 
@@ -411,21 +411,21 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             class="relative rounded-xl border-2 border-dashed transition-colors {dragOver
-              ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
-              : 'border-[var(--color-border)] hover:border-[var(--color-text-muted)]'}"
+              ? 'border-accent bg-accent/5'
+              : 'border-border hover:border-text-muted'}"
             ondragover={(e) => { e.preventDefault(); dragOver = true; }}
             ondragleave={() => (dragOver = false)}
             ondrop={handleDrop}
           >
             {#if images.length === 0}
               <div class="flex flex-col items-center justify-center py-10 text-center">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" class="mb-3 text-[var(--color-text-muted)]">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" class="mb-3 text-text-muted">
                   <rect x="4" y="6" width="24" height="20" rx="3" stroke="currentColor" stroke-width="1.5" />
                   <circle cx="12" cy="14" r="2.5" stroke="currentColor" stroke-width="1.5" />
                   <path d="M4 22l6-6 4 4 6-8 8 10" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
                 </svg>
-                <p class="text-sm text-[var(--color-text-muted)]">Drop or paste images here, or</p>
-                <label class="mt-1 cursor-pointer text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors">
+                <p class="text-sm text-text-muted">Drop or paste images here, or</p>
+                <label class="mt-1 cursor-pointer text-sm text-accent hover:text-accent-hover transition-colors">
                   browse files
                   <input type="file" accept="image/*" multiple class="hidden" onchange={(e) => handleFiles((e.target as HTMLInputElement).files)} />
                 </label>
@@ -436,7 +436,7 @@
                   <div class="group relative aspect-square overflow-hidden rounded-lg">
                     <img src={image.preview} alt="Upload preview" class="h-full w-full object-cover" />
                     <button
-                      class="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-surface)]/80 text-[var(--color-text-primary)] opacity-0 group-hover:opacity-100 transition-opacity"
+                      class="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface/80 text-text-primary opacity-0 group-hover:opacity-100 transition-opacity"
                       onclick={() => removeImage(i)}
                     >
                       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -445,7 +445,7 @@
                     </button>
                   </div>
                 {/each}
-                <label class="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-dashed border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors">
+                <label class="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-dashed border-border text-text-muted hover:border-text-muted hover:text-text-secondary transition-colors">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M10 4v12M4 10h12" />
                   </svg>
@@ -459,50 +459,50 @@
         <!-- Team & Project row -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="mb-2 block text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
+            <label class="mb-2 block text-sm font-medium uppercase tracking-widest text-text-muted">
               Team
             </label>
             <input
               type="text"
               placeholder="e.g. Growth"
               bind:value={team}
-              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-[var(--color-accent)] focus:outline-none transition-colors"
+              class="w-full rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none transition-colors"
             />
           </div>
           <div>
-            <label class="mb-2 block text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
+            <label class="mb-2 block text-sm font-medium uppercase tracking-widest text-text-muted">
               Project
             </label>
             <input
               type="text"
               placeholder="e.g. Onboarding Redesign"
               bind:value={project}
-              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-[var(--color-accent)] focus:outline-none transition-colors"
+              class="w-full rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none transition-colors"
             />
           </div>
         </div>
 
         <!-- Collaborators -->
         <div>
-          <label class="mb-2 block text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
+          <label class="mb-2 block text-sm font-medium uppercase tracking-widest text-text-muted">
             Collaborators
           </label>
-          <div class="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2">
+          <div class="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-overlay px-3 py-2">
             {#each collaborators as collab}
-              <span class="flex items-center gap-1.5 rounded-full bg-[var(--color-surface)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)]">
+              <span class="flex items-center gap-1.5 rounded-full bg-surface px-2 py-0.5 text-sm text-text-secondary">
                 <img src={`https://github.com/${collab}.png`} alt={collab} class="h-4 w-4 rounded-full object-cover" />
                 {collab}
-                <button class="ml-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]" onclick={() => removeCollaborator(collab)}>×</button>
+                <button class="ml-0.5 text-text-muted hover:text-text-primary" onclick={() => removeCollaborator(collab)}>×</button>
               </span>
             {/each}
             <div class="relative flex-1">
               <input type="text" placeholder={collaborators.length === 0 ? '@username' : ''} bind:value={collabInput}
                 onfocus={() => { if (collabInput.trim()) showCollabDropdown = true; }}
-                class="w-full min-w-[80px] border-none bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:outline-none" />
+                class="w-full min-w-[80px] border-none bg-transparent text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none" />
               {#if showCollabDropdown && collabSuggestions.length > 0}
-                <div class="absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-1 shadow-xl">
+                <div class="absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-xl border border-border bg-surface-raised p-1 shadow-xl">
                   {#each collabSuggestions as suggestion}
-                    <button class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] transition-colors"
+                    <button class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-overlay hover:text-text-primary transition-colors"
                       onclick={() => addCollaborator(suggestion)}>
                       <img src={`https://github.com/${suggestion}.png`} alt={suggestion} class="h-5 w-5 rounded-full object-cover" />
                       {suggestion}
@@ -516,15 +516,15 @@
 
         <!-- Tags -->
         <div>
-          <label class="mb-2 block text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
+          <label class="mb-2 block text-sm font-medium uppercase tracking-widest text-text-muted">
             Tags
           </label>
-          <div class="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2">
+          <div class="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-overlay px-3 py-2">
             {#each tags as tag}
-              <span class="flex items-center gap-1 rounded-full bg-[var(--color-surface)] px-2.5 py-0.5 text-xs text-[var(--color-text-secondary)]">
+              <span class="flex items-center gap-1 rounded-full bg-surface px-2.5 py-0.5 text-sm text-text-secondary">
                 {tag}
                 <button
-                  class="ml-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                  class="ml-0.5 text-text-muted hover:text-text-primary"
                   onclick={() => removeTag(tag)}
                 >×</button>
               </span>
@@ -539,23 +539,23 @@
                   addTag();
                 }
               }}
-              class="min-w-[80px] flex-1 border-none bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:outline-none"
+              class="min-w-[80px] flex-1 border-none bg-transparent text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none"
             />
           </div>
         </div>
 
         <!-- External URLs -->
         <div>
-          <label class="mb-2 block text-xs font-medium uppercase tracking-widest text-[var(--color-text-muted)]">
+          <label class="mb-2 block text-sm font-medium uppercase tracking-widest text-text-muted">
             Links
           </label>
           {#each urls as url, i}
             <div class="mb-2 flex items-center gap-2">
-              <div class="flex-1 truncate rounded-lg bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-secondary)]">
+              <div class="flex-1 truncate rounded-lg bg-surface-overlay px-3 py-2 text-sm text-text-secondary">
                 {url}
               </div>
               <button
-                class="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                class="text-text-muted hover:text-text-primary"
                 onclick={() => removeUrl(url)}
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -570,10 +570,10 @@
               placeholder="https://figma.com/…"
               bind:value={urlInput}
               onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addUrl(); } }}
-              class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]/50 focus:border-[var(--color-accent)] focus:outline-none transition-colors"
+              class="flex-1 rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-accent focus:outline-none transition-colors"
             />
             <button
-              class="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-muted)] transition-colors"
+              class="rounded-lg border border-border px-3 py-2 text-sm text-text-muted hover:text-text-primary hover:border-text-muted transition-colors"
               onclick={addUrl}
             >
               Add
@@ -583,13 +583,13 @@
       </div>
 
       <!-- Footer -->
-      <div class="border-t border-[var(--color-border-subtle)] px-6 py-4">
+      <div class="border-t border-border-subtle px-6 py-4">
         {#if submitError}
-          <p class="mb-3 text-xs text-red-400">{submitError}</p>
+          <p class="mb-3 text-sm text-red-400">{submitError}</p>
         {/if}
         <div class="flex items-center justify-end gap-3">
           <button
-            class="rounded-full px-5 py-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+            class="rounded-full px-5 py-2 text-sm text-text-muted hover:text-text-primary transition-colors"
             onclick={() => { resetForm(); isOpen = false; }}
             disabled={submitting}
           >
@@ -597,8 +597,8 @@
           </button>
           <button
             class="rounded-full px-6 py-2 text-sm font-semibold transition-colors {canSubmit
-              ? 'bg-[var(--color-accent)] text-[var(--color-surface)] hover:bg-[var(--color-accent-hover)]'
-              : 'bg-[var(--color-surface-overlay)] text-[var(--color-text-muted)] cursor-not-allowed'}"
+              ? 'bg-accent text-surface hover:bg-accent-hover'
+              : 'bg-surface-overlay text-text-muted cursor-not-allowed'}"
             disabled={!canSubmit}
             onclick={handleSubmit}
           >

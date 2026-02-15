@@ -27,6 +27,7 @@ export function reconcileFeed(
   // Step 4: Convert local-only entries to Post shape
   const localPosts: Post[] = localOnly.map((entry) => ({
     id: entry.localID,
+    number: entry.data.number ?? 0,
     metadata: entry.data.metadata,
     body: entry.data.body,
     createdAt: entry.data.createdAt,

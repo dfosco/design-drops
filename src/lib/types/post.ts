@@ -26,21 +26,43 @@ export interface PostMetadata {
   commentPins: CommentPin[];
 }
 
+export type ReactionContent = 'THUMBS_UP' | 'THUMBS_DOWN' | 'LAUGH' | 'HOORAY' | 'CONFUSED' | 'HEART' | 'ROCKET' | 'EYES';
+
+export interface ReactionGroup {
+  content: ReactionContent;
+  totalCount: number;
+  viewerHasReacted: boolean;
+}
+
 export interface Comment {
   id: string;
   body: string;
   author: User;
   createdAt: string;
   replies?: Comment[];
+  reactions?: ReactionGroup[];
+}
+
+/** A comment with context about which post it belongs to */
+export interface UserComment {
+  id: string;
+  body: string;
+  createdAt: string;
+  postTitle: string;
+  postNumber: number;
+  postSlug: string;
+  isReply: boolean;
 }
 
 export interface Post {
   id: string;
+  number: number;
   metadata: PostMetadata;
   body: string;
   createdAt: string;
   commentCount: number;
   comments?: Comment[];
+  reactions?: ReactionGroup[];
   optimisticStatus?: OptimisticStatus;
 }
 

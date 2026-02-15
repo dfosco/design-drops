@@ -12,6 +12,7 @@ const PLACEHOLDER_IMAGES = [
 export const MOCK_POSTS: Post[] = [
   {
     id: 'disc-001',
+    number: 1,
     metadata: {
       localID: 'a3f8c1b2-9e4d-4f7a-b2c1-d8e9f0a1b2c3',
       versionID: 'v_1707823445123',
@@ -34,6 +35,7 @@ export const MOCK_POSTS: Post[] = [
   },
   {
     id: 'disc-002',
+    number: 2,
     metadata: {
       localID: 'b4c9d2e3-0f5e-5a8b-c3d2-e9f0a1b2c3d4',
       versionID: 'v_1707823445124',
@@ -57,6 +59,7 @@ export const MOCK_POSTS: Post[] = [
   },
   {
     id: 'disc-003',
+    number: 3,
     metadata: {
       localID: 'c5d0e3f4-1a6f-6b9c-d4e3-f0a1b2c3d4e5',
       versionID: 'v_1707823445125',
@@ -78,6 +81,7 @@ export const MOCK_POSTS: Post[] = [
   },
   {
     id: 'disc-004',
+    number: 4,
     metadata: {
       localID: 'd6e1f4a5-2b7a-7c0d-e5f4-a1b2c3d4e5f6',
       versionID: 'v_1707823445126',
@@ -100,6 +104,7 @@ export const MOCK_POSTS: Post[] = [
   },
   {
     id: 'disc-005',
+    number: 5,
     metadata: {
       localID: 'e7f2a5b6-3c8b-8d1e-f6a5-b2c3d4e5f6a7',
       versionID: 'v_1707823445127',

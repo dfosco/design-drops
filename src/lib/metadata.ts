@@ -15,10 +15,11 @@ export function parseMetadata(body: string): PostMetadata | null {
   }
 }
 
-export function serializeMetadata(meta: PostMetadata, bodyText: string): string {
+export function serializeMetadata(meta: PostMetadata, bodyText: string, discussionNumber?: number): string {
   const json = JSON.stringify(meta, null, 2);
   const slug = slugify(meta.title);
-  const postUrl = `${config.site.siteUrl}${config.site.basePath}/post/${slug}`;
+  const numberPrefix = discussionNumber ? `${discussionNumber}/` : '';
+  const postUrl = `${config.site.siteUrl}${config.site.basePath}/post/${numberPrefix}${slug}`;
 
   const parts: string[] = [];
 

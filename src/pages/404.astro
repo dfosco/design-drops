@@ -1,17 +1,19 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Header from "../components/Header.svelte";
-import PostDetail from "../components/PostDetail.svelte";
+import PageRouter from "../components/PageRouter.svelte";
+import AuthGate from "../components/AuthGate.svelte";
 ---
 
 <!--
   GitHub Pages serves this for any unknown path.
-  Slug-based post URLs like /post/my-title land here and
-  PostDetail reads the slug from window.location.pathname.
+  PageRouter determines the correct component based on the URL.
 -->
-<Layout title="Post — Design Drops">
+<Layout title="Design Drops">
   <Header client:load />
   <main>
-    <PostDetail client:load />
+    <AuthGate client:load>
+      <PageRouter client:load />
+    </AuthGate>
   </main>
 </Layout>

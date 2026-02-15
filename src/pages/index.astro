@@ -2,7 +2,6 @@
 import Layout from "../layouts/Layout.astro";
 import Header from "../components/Header.svelte";
 import Feed from "../components/Feed.svelte";
-import PostComposer from "../components/PostComposer.svelte";
 import AuthGate from "../components/AuthGate.svelte";
 ---
 
@@ -13,7 +12,4 @@ import AuthGate from "../components/AuthGate.svelte";
       <Feed client:load />
     </AuthGate>
   </main>
-  <div class="fixed bottom-8 right-8 z-40">
-    <PostComposer client:load />
-  </div>
 </Layout>

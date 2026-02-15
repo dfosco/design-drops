@@ -8,13 +8,18 @@
   "site": {
     "title": "Design Drops",
     "description": "What the team's been working on",
-    "basePath": "/design-drops"
+    "basePath": "/design-drops",
+    "siteUrl": "https://dfosco.github.io"
   },
   "discussions": {
     "category": "General"
   },
   "features": {
     "mockPosts": false,
-    "comments": false
+    "comments": true
+  },
+  "access": {
+    "allowedDomains": [],
+    "allowedEmails": []
   }
 }

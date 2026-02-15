@@ -21,8 +21,16 @@ const { title = "Design Drops" } = Astro.props;
       rel="stylesheet"
     />
     <title>{title}</title>
+    <script is:inline>
+      // Apply theme before first paint to prevent flash
+      (function() {
+        var pref = localStorage.getItem('dd-theme') || 'system';
+        var isDark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) document.documentElement.classList.add('dark');
+      })();
+    </script>
   </head>
-  <body class="min-h-screen bg-[var(--color-surface)]">
+  <body class="min-h-screen bg-surface">
     <slot />
   </body>
 </html>

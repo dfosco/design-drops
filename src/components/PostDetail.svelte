@@ -235,22 +235,22 @@
   }
 </script>
 
-<div class="mx-auto max-w-4xl px-[var(--spacing-page)] pt-28 pb-20">
+<div class="mx-auto max-w-4xl px-[var(--spacing-page)] pt-10 pb-20">
   {#if loading}
     <!-- Loading skeleton -->
     <div class="animate-pulse">
-      <div class="mb-4 h-4 w-32 rounded bg-[var(--color-surface-overlay)]"></div>
-      <div class="mb-6 h-10 w-3/4 rounded bg-[var(--color-surface-overlay)]"></div>
-      <div class="aspect-[16/10] rounded-xl bg-[var(--color-surface-overlay)]"></div>
+      <div class="mb-4 h-4 w-32 rounded bg-surface-overlay"></div>
+      <div class="mb-6 h-10 w-3/4 rounded bg-surface-overlay"></div>
+      <div class="aspect-[16/10] rounded-xl bg-surface-overlay"></div>
     </div>
   {:else if !post}
     <!-- Not found -->
     <div class="flex flex-col items-center justify-center py-32 text-center animate-fade-up">
       <div class="mb-4 text-6xl opacity-20">✦</div>
-      <p class="text-xl text-[var(--color-text-muted)]">Post not found</p>
+      <p class="text-xl text-text-muted">Post not found</p>
       <a
         href="/design-drops/"
-        class="mt-4 text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors"
+        class="mt-4 text-sm text-accent hover:text-accent-hover transition-colors"
       >
         ← Back to feed
       </a>
@@ -259,7 +259,7 @@
     <!-- Back link -->
     <a
       href="/design-drops/"
-      class="mb-8 inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors animate-fade-up"
+      class="mb-8 inline-flex items-center gap-2 text-sm text-text-muted hover:text-text-primary transition-colors animate-fade-up"
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M9 2L4 7l5 5" />
@@ -269,18 +269,18 @@
 
     <!-- Header -->
     <div class="mb-8 animate-fade-up" style="animation-delay: 60ms">
-      <div class="mb-3 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+      <div class="mb-3 flex items-center gap-2 text-sm text-text-muted">
         <span>{post.metadata.team}</span>
         {#if post.metadata.project}
           <span class="opacity-40">·</span>
           <a href={`${config.site.basePath}/project/${slugify(post.metadata.project)}`}
-            class="hover:text-[var(--color-accent)] transition-colors">{post.metadata.project}</a>
+            class="hover:text-accent transition-colors">{post.metadata.project}</a>
         {/if}
         <span class="opacity-40">·</span>
         <span>{timeAgo(post.createdAt)}</span>
       </div>
 
-      <h1 class="mb-4 font-[var(--font-display)] text-4xl font-bold leading-tight tracking-tight text-[var(--color-text-primary)] md:text-5xl">
+      <h1 class="mb-4 font-heading text-4xl font-bold leading-tight tracking-tight text-text-primary md:text-5xl">
         {post.metadata.title}
       </h1>
 
@@ -288,24 +288,24 @@
       <div class="flex items-center gap-3">
         <div class="flex -space-x-2">
           {#each post.metadata.authors as author}
-            <img src={`https://github.com/${author}.png`} alt={author} class="h-8 w-8 rounded-full border-2 border-[var(--color-surface)] object-cover" loading="lazy" />
+            <img src={`https://github.com/${author}.png`} alt={author} class="h-8 w-8 rounded-full border-2 border-surface object-cover" loading="lazy" />
           {/each}
         </div>
-        <span class="text-sm text-[var(--color-text-secondary)]">
+        <span class="text-sm text-text-secondary">
           {#each post.metadata.authors as author, i}
-            <a href={`${config.site.basePath}/user/${author}`} class="hover:text-[var(--color-accent)] transition-colors">{author}</a>{#if i < post.metadata.authors.length - 1}{' & '}{/if}
+            <a href={`${config.site.basePath}/user/${author}`} class="hover:text-accent transition-colors">{author}</a>{#if i < post.metadata.authors.length - 1}{' & '}{/if}
           {/each}
         </span>
         {#if post.metadata.collaborators && post.metadata.collaborators.length > 0}
-          <span class="text-sm text-[var(--color-text-muted)]">with</span>
+          <span class="text-sm text-text-muted">with</span>
           <div class="flex -space-x-1.5">
             {#each post.metadata.collaborators as collab}
-              <img src={`https://github.com/${collab}.png`} alt={collab} class="h-7 w-7 rounded-full border-2 border-[var(--color-surface)] object-cover" loading="lazy" />
+              <img src={`https://github.com/${collab}.png`} alt={collab} class="h-7 w-7 rounded-full border-2 border-surface object-cover" loading="lazy" />
             {/each}
           </div>
-          <span class="text-sm text-[var(--color-text-muted)]">
+          <span class="text-sm text-text-muted">
             {#each post.metadata.collaborators as collab, i}
-              <a href={`${config.site.basePath}/user/${collab}`} class="hover:text-[var(--color-accent)] transition-colors">{collab}</a>{#if i < post.metadata.collaborators.length - 1}{', '}{/if}
+              <a href={`${config.site.basePath}/user/${collab}`} class="hover:text-accent transition-colors">{collab}</a>{#if i < post.metadata.collaborators.length - 1}{', '}{/if}
             {/each}
           </span>
         {/if}
@@ -321,7 +321,7 @@
 
     <!-- Body -->
     <div class="mb-10 animate-fade-up" style="animation-delay: 180ms">
-      <p class="max-w-2xl text-lg leading-relaxed text-[var(--color-text-secondary)]">
+      <p class="max-w-2xl text-lg leading-relaxed text-text-secondary">
         <RichText text={post.body} />
       </p>
     </div>
@@ -331,7 +331,7 @@
       <div class="flex items-center gap-1.5 mb-10 flex-wrap animate-fade-up" style="animation-delay: 200ms">
         {#each post.reactions ?? [] as reaction}
           <button
-            class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm transition-colors {reaction.viewerHasReacted ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'}"
+            class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm transition-colors {reaction.viewerHasReacted ? 'border-accent/40 bg-accent/10 text-accent' : 'border-border text-text-muted hover:border-text-muted'}"
             onclick={() => toggleReaction(post!, reaction.content)}
           >
             <span>{REACTION_EMOJI[reaction.content] ?? reaction.content}</span>
@@ -340,7 +340,7 @@
         {/each}
         <div class="relative group">
           <button
-            class="inline-flex items-center rounded-full border border-transparent px-1.5 py-0.5 text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-overlay)] transition-colors"
+            class="inline-flex items-center rounded-full border border-transparent px-1.5 py-0.5 text-sm text-text-muted hover:border-border hover:bg-surface-overlay transition-colors"
             onclick={(e: MouseEvent) => {
               const target = e.currentTarget as HTMLElement;
               const picker = target.nextElementSibling;
@@ -349,11 +349,11 @@
           >
             😀+
           </button>
-          <div class="hidden absolute bottom-full left-0 mb-1 z-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-1.5 shadow-xl flex gap-0.5">
+          <div class="hidden absolute bottom-full left-0 mb-1 z-10 rounded-xl border border-border bg-surface-raised p-1.5 shadow-xl flex gap-0.5">
             {#each Object.entries(REACTION_EMOJI) as [content, emoji]}
               {@const reacted = post?.reactions?.some(r => r.content === content && r.viewerHasReacted)}
               <button
-                class="rounded-lg p-1.5 text-sm transition-colors {reacted ? 'bg-[var(--color-accent)]/15 ring-1 ring-[var(--color-accent)]/40' : 'hover:bg-[var(--color-surface-overlay)]'}"
+                class="rounded-lg p-1.5 text-sm transition-colors {reacted ? 'bg-accent/15 ring-1 ring-accent/40' : 'hover:bg-surface-overlay'}"
                 onclick={(e: MouseEvent) => {
                   toggleReaction(post!, content);
                   const picker = (e.currentTarget as HTMLElement).parentElement;
@@ -371,14 +371,14 @@
     <!-- External URLs -->
     {#if post.metadata.urls.length > 0}
       <div class="mb-10 animate-fade-up" style="animation-delay: 240ms">
-        <h3 class="mb-3 text-sm font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Links</h3>
+        <h3 class="mb-3 text-sm font-medium uppercase tracking-widest text-text-muted">Links</h3>
         <div class="flex flex-wrap gap-3">
           {#each post.metadata.urls as url}
             <a
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              class="group flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-sm text-[var(--color-text-secondary)] transition-all hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+              class="group flex items-center gap-2 rounded-lg border border-border bg-surface-raised px-4 py-3 text-sm text-text-secondary transition-all hover:border-accent hover:text-accent"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-50 group-hover:opacity-100">
                 <path d="M6 2H3a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V8" />
@@ -394,10 +394,10 @@
     <!-- Tags -->
     {#if post.metadata.tags.length > 0}
       <div class="mb-10 animate-fade-up" style="animation-delay: 300ms">
-        <h3 class="mb-3 text-sm font-medium uppercase tracking-widest text-[var(--color-text-muted)]">Tags</h3>
+        <h3 class="mb-3 text-sm font-medium uppercase tracking-widest text-text-muted">Tags</h3>
         <div class="flex flex-wrap gap-2">
           {#each post.metadata.tags as tag}
-            <span class="rounded-full bg-[var(--color-surface-overlay)] px-3 py-1 text-sm text-[var(--color-text-muted)]">
+            <span class="rounded-full bg-surface-overlay px-3 py-1 text-sm text-text-muted">
               {tag}
             </span>
           {/each}
@@ -407,23 +407,23 @@
 
     <!-- Actions -->
     {#if isAuthor}
-    <div class="flex items-center gap-3 border-t border-[var(--color-border-subtle)] pt-6 animate-fade-up" style="animation-delay: 360ms">
+    <div class="flex items-center gap-3 border-t border-border-subtle pt-6 animate-fade-up" style="animation-delay: 360ms">
       <button
-        class="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+        class="rounded-full border border-border px-4 py-2 text-sm text-text-secondary hover:border-text-muted hover:text-text-primary transition-colors"
         onclick={() => startEditing()}
       >
         Edit
       </button>
       <div class="relative">
         <button
-          class="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm text-[var(--color-text-muted)] hover:border-red-500/50 hover:text-red-400 transition-colors"
+          class="rounded-full border border-border px-4 py-2 text-sm text-text-muted hover:border-red-500/50 hover:text-red-400 transition-colors"
           onclick={() => (showDeleteConfirm = !showDeleteConfirm)}
         >
           Delete
         </button>
         {#if showDeleteConfirm}
-          <div class="absolute left-0 top-full mt-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 shadow-xl animate-fade-in z-10">
-            <p class="mb-3 text-sm text-[var(--color-text-secondary)]">Delete this drop?</p>
+          <div class="absolute left-0 top-full mt-2 rounded-xl border border-border bg-surface-raised p-4 shadow-xl animate-fade-in z-10">
+            <p class="mb-3 text-sm text-text-secondary">Delete this drop?</p>
             {#if deleteError}
               <p class="mb-3 text-sm text-red-400">{deleteError}</p>
             {/if}
@@ -446,7 +446,7 @@
                 {/if}
               </button>
               <button
-                class="rounded-full border border-[var(--color-border)] px-4 py-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                class="rounded-full border border-border px-4 py-1.5 text-sm text-text-muted hover:text-text-primary transition-colors"
                 onclick={() => (showDeleteConfirm = false)}
                 disabled={deleting}
               >
@@ -461,29 +461,29 @@
 
     <!-- Comments -->
     {#if config.features.comments}
-      <div class="mt-12 border-t border-[var(--color-border-subtle)] pt-8 animate-fade-up" style="animation-delay: 420ms">
-        <h3 class="mb-6 font-[var(--font-display)] text-2xl text-[var(--color-text-primary)]">
+      <div class="mt-12 border-t border-border-subtle pt-8 animate-fade-up" style="animation-delay: 420ms">
+        <h3 class="mb-6 font-heading text-2xl text-text-primary">
           Comments
           {#if post.commentCount > 0}
-            <span class="ml-2 text-lg text-[var(--color-text-muted)]">({post.commentCount})</span>
+            <span class="ml-2 text-lg text-text-muted">({post.commentCount})</span>
           {/if}
         </h3>
 
         <!-- Comment input -->
-        <div class="mb-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4">
+        <div class="mb-8 rounded-xl border border-border bg-surface-raised p-4">
           <AutocompleteTextarea
             bind:value={commentText}
             placeholder="Add a comment…"
             rows={3}
             disabled={submittingComment}
-            class="w-full resize-none bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none disabled:opacity-50"
+            class="w-full resize-none bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none disabled:opacity-50"
           />
           {#if commentError}
             <p class="mt-2 text-sm text-red-400">{commentError}</p>
           {/if}
           <div class="mt-3 flex justify-end">
             <button
-              class="rounded-full bg-[var(--color-accent)] px-4 py-1.5 text-sm font-medium text-[var(--color-surface)] transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={submittingComment || !commentText.trim()}
               onclick={handleAddComment}
             >
@@ -500,28 +500,28 @@
                 <img src={`https://github.com/${comment.author.login}.png`} alt={comment.author.login} class="h-8 w-8 shrink-0 rounded-full object-cover" loading="lazy" />
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
-                    <a href={`${config.site.basePath}/user/${comment.author.login}`} class="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors">{comment.author.login}</a>
-                    <span class="text-sm text-[var(--color-text-muted)]">{timeAgo(comment.createdAt)}</span>
-                    <button class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+                    <a href={`${config.site.basePath}/user/${comment.author.login}`} class="text-sm font-medium text-text-primary hover:text-accent transition-colors">{comment.author.login}</a>
+                    <span class="text-sm text-text-muted">{timeAgo(comment.createdAt)}</span>
+                    <button class="text-sm text-text-muted hover:text-accent transition-colors"
                       onclick={() => startReply(comment.id, comment.author.login)}>
                       Reply
                     </button>
                     {#if $currentUser?.login === comment.author.login}
                       <button
-                        class="ml-auto text-sm text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
+                        class="ml-auto text-sm text-text-muted hover:text-red-400 transition-colors"
                         onclick={() => handleDeleteComment(comment.id)}
                       >
                         Delete
                       </button>
                     {/if}
                   </div>
-                  <p class="mt-1 text-sm text-[var(--color-text-secondary)]"><RichText text={comment.body} /></p>
+                  <p class="mt-1 text-sm text-text-secondary"><RichText text={comment.body} /></p>
 
                   <!-- Comment reactions -->
                   <div class="flex items-center gap-1.5 mt-2 flex-wrap">
                     {#each comment.reactions ?? [] as reaction}
                       <button
-                        class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm transition-colors {reaction.viewerHasReacted ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'}"
+                        class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm transition-colors {reaction.viewerHasReacted ? 'border-accent/40 bg-accent/10 text-accent' : 'border-border text-text-muted hover:border-text-muted'}"
                         onclick={() => toggleReaction(comment, reaction.content)}
                       >
                         <span>{REACTION_EMOJI[reaction.content] ?? reaction.content}</span>
@@ -530,7 +530,7 @@
                     {/each}
                     <div class="relative group">
                       <button
-                        class="inline-flex items-center rounded-full border border-transparent px-1.5 py-0.5 text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-overlay)] transition-colors"
+                        class="inline-flex items-center rounded-full border border-transparent px-1.5 py-0.5 text-sm text-text-muted hover:border-border hover:bg-surface-overlay transition-colors"
                         onclick={(e: MouseEvent) => {
                           const target = e.currentTarget as HTMLElement;
                           const picker = target.nextElementSibling;
@@ -539,11 +539,11 @@
                       >
                         😀+
                       </button>
-                      <div class="hidden absolute bottom-full left-0 mb-1 z-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-1.5 shadow-xl flex gap-0.5">
+                      <div class="hidden absolute bottom-full left-0 mb-1 z-10 rounded-xl border border-border bg-surface-raised p-1.5 shadow-xl flex gap-0.5">
                         {#each Object.entries(REACTION_EMOJI) as [content, emoji]}
                           {@const reacted = comment.reactions?.some(r => r.content === content && r.viewerHasReacted)}
                           <button
-                            class="rounded-lg p-1.5 text-sm transition-colors {reacted ? 'bg-[var(--color-accent)]/15 ring-1 ring-[var(--color-accent)]/40' : 'hover:bg-[var(--color-surface-overlay)]'}"
+                            class="rounded-lg p-1.5 text-sm transition-colors {reacted ? 'bg-accent/15 ring-1 ring-accent/40' : 'hover:bg-surface-overlay'}"
                             onclick={(e: MouseEvent) => {
                               toggleReaction(comment, content);
                               const picker = (e.currentTarget as HTMLElement).parentElement;
@@ -558,26 +558,26 @@
                   </div>
 
                   {#if comment.replies && comment.replies.length > 0}
-                    <div class="mt-3 space-y-3 border-l-2 border-[var(--color-border-subtle)] pl-4">
+                    <div class="mt-3 space-y-3 border-l-2 border-border-subtle pl-4">
                       {#each comment.replies as reply}
                         <div class="flex gap-2.5">
                           <img src={`https://github.com/${reply.author.login}.png`} alt={reply.author.login} class="h-6 w-6 shrink-0 rounded-full object-cover" loading="lazy" />
                           <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2">
-                              <a href={`${config.site.basePath}/user/${reply.author.login}`} class="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors">{reply.author.login}</a>
-                              <span class="text-sm text-[var(--color-text-muted)]">{timeAgo(reply.createdAt)}</span>
+                              <a href={`${config.site.basePath}/user/${reply.author.login}`} class="text-sm font-medium text-text-primary hover:text-accent transition-colors">{reply.author.login}</a>
+                              <span class="text-sm text-text-muted">{timeAgo(reply.createdAt)}</span>
                               {#if $currentUser?.login === reply.author.login}
-                                <button class="ml-auto text-sm text-[var(--color-text-muted)] hover:text-red-400 transition-colors"
+                                <button class="ml-auto text-sm text-text-muted hover:text-red-400 transition-colors"
                                   onclick={() => handleDeleteComment(reply.id)}>Delete</button>
                               {/if}
                             </div>
-                            <p class="mt-0.5 text-sm text-[var(--color-text-secondary)]"><RichText text={reply.body} /></p>
+                            <p class="mt-0.5 text-sm text-text-secondary"><RichText text={reply.body} /></p>
 
                             <!-- Reply reactions -->
                             <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
                               {#each reply.reactions ?? [] as reaction}
                                 <button
-                                  class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm transition-colors {reaction.viewerHasReacted ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'}"
+                                  class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm transition-colors {reaction.viewerHasReacted ? 'border-accent/40 bg-accent/10 text-accent' : 'border-border text-text-muted hover:border-text-muted'}"
                                   onclick={() => toggleReaction(reply, reaction.content)}
                                 >
                                   <span>{REACTION_EMOJI[reaction.content] ?? reaction.content}</span>
@@ -586,7 +586,7 @@
                               {/each}
                               <div class="relative group">
                                 <button
-                                  class="inline-flex items-center rounded-full border border-transparent px-1.5 py-0.5 text-sm text-[var(--color-text-muted)] hover:border-[var(--color-border)] hover:bg-[var(--color-surface-overlay)] transition-colors"
+                                  class="inline-flex items-center rounded-full border border-transparent px-1.5 py-0.5 text-sm text-text-muted hover:border-border hover:bg-surface-overlay transition-colors"
                                   onclick={(e: MouseEvent) => {
                                     const target = e.currentTarget as HTMLElement;
                                     const picker = target.nextElementSibling;
@@ -595,11 +595,11 @@
                                 >
                                   😀+
                                 </button>
-                                <div class="hidden absolute bottom-full left-0 mb-1 z-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-1.5 shadow-xl flex gap-0.5">
+                                <div class="hidden absolute bottom-full left-0 mb-1 z-10 rounded-xl border border-border bg-surface-raised p-1.5 shadow-xl flex gap-0.5">
                                   {#each Object.entries(REACTION_EMOJI) as [content, emoji]}
                                     {@const reacted = reply.reactions?.some(r => r.content === content && r.viewerHasReacted)}
                                     <button
-                                      class="rounded-lg p-1.5 text-sm transition-colors {reacted ? 'bg-[var(--color-accent)]/15 ring-1 ring-[var(--color-accent)]/40' : 'hover:bg-[var(--color-surface-overlay)]'}"
+                                      class="rounded-lg p-1.5 text-sm transition-colors {reacted ? 'bg-accent/15 ring-1 ring-accent/40' : 'hover:bg-surface-overlay'}"
                                       onclick={(e: MouseEvent) => {
                                         toggleReaction(reply, content);
                                         const picker = (e.currentTarget as HTMLElement).parentElement;
@@ -622,15 +622,15 @@
                     <div class="mt-3 flex gap-2.5">
                       <div class="flex-1">
                         <AutocompleteTextarea bind:value={replyText} placeholder={`Reply to ${replyingToUser}…`} rows={2}
-                          class="w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-overlay)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)]" />
+                          class="w-full resize-none rounded-lg border border-border bg-surface-overlay px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent" />
                       </div>
                       <div class="flex flex-col gap-1.5">
                         <button onclick={() => handleReply(comment.id)} disabled={submittingReply || !replyText.trim()}
-                          class="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-sm font-medium text-[var(--color-surface)] hover:opacity-90 disabled:opacity-50 transition-opacity">
+                          class="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-surface hover:opacity-90 disabled:opacity-50 transition-opacity">
                           {submittingReply ? '…' : 'Reply'}
                         </button>
                         <button onclick={() => { replyingTo = null; replyText = ''; }}
-                          class="rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
+                          class="rounded-lg px-3 py-1.5 text-sm text-text-muted hover:text-text-primary transition-colors">
                           Cancel
                         </button>
                       </div>
@@ -640,7 +640,7 @@
               </div>
             {/each}
           {:else}
-            <p class="text-center text-sm text-[var(--color-text-muted)]">
+            <p class="text-center text-sm text-text-muted">
               No comments yet
             </p>
           {/if}
